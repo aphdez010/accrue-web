@@ -4,7 +4,7 @@ import { useApi } from '../context/api-context';
 
 export default function DashboardPage() {
   const api = useApi();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
     api.get('/compliance').then(setData).catch(console.error);
@@ -72,7 +72,6 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
-
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
           <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>Hours breakdown</div>
           {[

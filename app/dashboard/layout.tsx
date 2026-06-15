@@ -71,7 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               { label: 'Log hours', icon: '+', href: '/dashboard/fieldwork' },
               { label: 'Accrual record', icon: '↗', href: '/dashboard/compliance' },
               { label: 'Vault', icon: '▣', href: '/dashboard/vault' },
-              { label: 'Import history', icon: '⬆', href: '/dashboard' },
+              { label: 'Import history', icon: '⬆', href: '/dashboard/import' },
             ] : [
               { label: 'Roster', icon: '◉', href: '/dashboard' },
               { label: 'Sign forms', icon: '✦', href: '/dashboard' },

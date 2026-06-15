@@ -1,7 +1,6 @@
 'use client';
 import { useState, CSSProperties } from 'react';
 import { useApi } from '../../context/api-context';
-import { useApi } from '../../context/api-context';
 
 interface VaultDoc {
   id: string;
@@ -22,25 +21,23 @@ const TYPE_LABELS: Record<VaultDoc['type'], string> = {
 export default function VaultPage() {
   const [docs] = useState<VaultDoc[]>([]);
 
-  const card: React.CSSProperties = {
+  const card: CSSProperties = {
     background: 'var(--surface)',
     border: '1px solid var(--border)',
     borderRadius: 12,
     padding: '28px 32px',
   };
 
-  const label: React.CSSProperties = {
+  const label: CSSProperties = {
     fontFamily: 'var(--mono)',
     fontSize: 10,
     letterSpacing: '0.08em',
-    textTransform: 'uppercase' as const,
+    textTransform: 'uppercase',
     color: 'var(--muted)',
   };
 
   return (
     <div style={{ padding: '40px', maxWidth: 880 }}>
-
-      {/* Header */}
       <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <div>
           <p style={{ ...label, marginBottom: 6 }}>Vault</p>
@@ -48,51 +45,32 @@ export default function VaultPage() {
             Document Storage
           </h1>
         </div>
-        <button
-          style={{
-            background: 'var(--spruce)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            padding: '10px 22px',
-            fontFamily: 'var(--mono)',
-            fontSize: 12,
-            letterSpacing: '0.06em',
-            cursor: 'pointer',
-          }}
-        >
+        <button style={{
+          background: 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8,
+          padding: '10px 22px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.06em', cursor: 'pointer',
+        }}>
           + Upload
         </button>
       </div>
 
-      {/* Category pills */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' as const }}>
-        {(['All', 'Supervision Log', 'Certificate', 'Credential', 'Form', 'Other']).map(cat => (
-          <button
-            key={cat}
-            style={{
-              background: cat === 'All' ? 'var(--spruce)' : 'var(--surface)',
-              color: cat === 'All' ? '#fff' : 'var(--muted)',
-              border: '1px solid var(--border)',
-              borderRadius: 20,
-              padding: '5px 14px',
-              fontFamily: 'var(--mono)',
-              fontSize: 11,
-              letterSpacing: '0.05em',
-              cursor: 'pointer',
-            }}
-          >
+      <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
+        {['All', 'Supervision Log', 'Certificate', 'Credential', 'Form', 'Other'].map(cat => (
+          <button key={cat} style={{
+            background: cat === 'All' ? 'var(--spruce)' : 'var(--surface)',
+            color: cat === 'All' ? '#fff' : 'var(--muted)',
+            border: '1px solid var(--border)', borderRadius: 20,
+            padding: '5px 14px', fontFamily: 'var(--mono)', fontSize: 11,
+            letterSpacing: '0.05em', cursor: 'pointer',
+          }}>
             {cat}
           </button>
         ))}
       </div>
 
-      {/* Doc list */}
       <div style={card}>
         <p style={{ ...label, marginBottom: 20 }}>Files</p>
-
         {docs.length === 0 ? (
-          <div style={{ padding: '48px 0', textAlign: 'center' as const }}>
+          <div style={{ padding: '48px 0', textAlign: 'center' }}>
             <p style={{ fontFamily: 'var(--display)', fontSize: 18, color: 'var(--muted)', marginBottom: 8 }}>
               No documents yet
             </p>
@@ -106,46 +84,26 @@ export default function VaultPage() {
               <tr>
                 {['Name', 'Type', 'Date', ''].map(h => (
                   <th key={h} style={{
-                    textAlign: 'left' as const,
-                    fontFamily: 'var(--mono)',
-                    fontSize: 10,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase' as const,
-                    color: 'var(--muted)',
-                    paddingBottom: 12,
-                    borderBottom: '1px solid var(--border)',
-                    fontWeight: 500,
-                  }}>
-                    {h}
-                  </th>
+                    textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 10,
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    color: 'var(--muted)', paddingBottom: 12,
+                    borderBottom: '1px solid var(--border)', fontWeight: 500,
+                  }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {docs.map((doc, i) => (
                 <tr key={doc.id} style={{ borderBottom: i < docs.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                  <td style={{ padding: '14px 0', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)' }}>
-                    {doc.name}
-                  </td>
-                  <td style={{ padding: '14px 16px 14px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>
-                    {TYPE_LABELS[doc.type]}
-                  </td>
-                  <td style={{ padding: '14px 16px 14px 0', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>
-                    {doc.date}
-                  </td>
-                  <td style={{ padding: '14px 0', textAlign: 'right' as const }}>
+                  <td style={{ padding: '14px 0', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)' }}>{doc.name}</td>
+                  <td style={{ padding: '14px 16px 14px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{TYPE_LABELS[doc.type]}</td>
+                  <td style={{ padding: '14px 16px 14px 0', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{doc.date}</td>
+                  <td style={{ padding: '14px 0', textAlign: 'right' }}>
                     <button style={{
-                      background: 'transparent',
-                      border: '1px solid var(--border)',
-                      borderRadius: 6,
-                      padding: '4px 12px',
-                      fontFamily: 'var(--mono)',
-                      fontSize: 11,
-                      color: 'var(--muted)',
-                      cursor: 'pointer',
-                    }}>
-                      View
-                    </button>
+                      background: 'transparent', border: '1px solid var(--border)',
+                      borderRadius: 6, padding: '4px 12px', fontFamily: 'var(--mono)',
+                      fontSize: 11, color: 'var(--muted)', cursor: 'pointer',
+                    }}>View</button>
                   </td>
                 </tr>
               ))}

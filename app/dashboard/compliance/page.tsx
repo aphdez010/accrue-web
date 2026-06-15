@@ -1,6 +1,7 @@
 'use client';
-import { useEffect, useState, CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { useApi } from '../../context/api-context';
+import type { CSSProperties } from 'react';
 
 interface ComplianceData {
   total_hours: number;

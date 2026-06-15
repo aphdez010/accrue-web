@@ -15,6 +15,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setRole(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
   }, [pathname]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const [totalHours, setTotalHours] = useState<number>(0);
   const { getToken } = useAuth();
   useEffect(() => {
@@ -69,29 +76,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ApiProvider>
-      <style>{`
-        @media (max-width: 768px) {
-          .dash-grid { grid-template-columns: 1fr !important; }
-          .dash-sidebar { display: none !important; }
-          .dash-agent { display: none !important; }
-          .dash-mobile-bar { display: flex !important; }
-        }
-        .dash-mobile-bar { display: none; background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
-      `}</style>
-      <div className="dash-mobile-bar">
-        <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
-        <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 4 }}>
-          {(['trainee', 'bcba'] as const).map(r => (
-            <button key={r} onClick={() => setRole(r)} style={{ flex: 1, border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10px var(--sans)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer' }}>
-              {r === 'trainee' ? 'Trainee' : 'BCBA'}
-            </button>
-          ))}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr 360px', height: '100vh', background: 'var(--bg)', fontFamily: 'var(--sans)' }}>
+      {isMobile && (
+        <div style={{ gridColumn: '1', background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+          <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
+          <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 4 }}>
+            {(['trainee', 'bcba'] as const).map(r => (
+              <button key={r} onClick={() => setRole(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10px var(--sans)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer' }}>
+                {r === 'trainee' ? 'Trainee' : 'BCBA'}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="dash-grid" style={{ display: 'grid', gridTemplateColumns: '220px 1fr 360px', height: '100vh', background: 'var(--bg)', fontFamily: 'var(--sans)' }}>
+      )}
 
         {/* SIDEBAR */}
-        <aside className="dash-sidebar" style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {!isMobile && <aside style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '.15em', textTransform: 'uppercase', marginTop: 2 }}>BACB Compliance Platform</div>
@@ -144,7 +144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '.08em', textTransform: 'uppercase' }}>BCBA</div>
             </div>
           </div>
-        </aside>
+        </aside>}
 
         {/* MAIN */}
         <main style={{ overflowY: 'auto', background: 'var(--bg)' }}>
@@ -152,7 +152,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
 
         {/* AGENT PANEL */}
-        <aside className="dash-agent" style={{ background: 'var(--surface)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {!isMobile && <aside style={{ background: 'var(--surface)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '20px 20px 14px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 700, marginBottom: 2 }}>Ask Supervisd ✦</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '.08em', textTransform: 'uppercase' }}>Answers from the BACB handbook</div>
@@ -198,10 +198,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               disabled={loading}
               style={{ background: 'var(--spruce)', border: 0, color: '#fff', font: '600 13px var(--sans)', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', alignSelf: 'flex-end', opacity: loading ? 0.6 : 1 }}>Send</button>
           </div>
-        </aside>
+        </aside>}
 
       </div>
-    </div>
-      </ApiProvider>
+    </ApiProvider>
   );
 }

@@ -33,7 +33,7 @@ export default function FieldworkPage() {
   function submit() {
     if (!date || !hours) return;
     setBusy(true); setErr('');
-    post('/fieldwork', { entry_date: date, hours: parseFloat(hours), activity_type: type, notes: notes||null, is_supervised: supervised, supervisor_name: supervisor||null })
+    post('/fieldwork', { entry_date: date, hours: parseFloat(hours), experience_type: type, notes: notes||null, is_supervised: supervised, supervisor_name: supervisor||null })
       .then(() => {
         setHours(''); setNotes(''); setSupervised(false); setSupervisor('');
         setOk(true); setTimeout(() => setOk(false), 3000);

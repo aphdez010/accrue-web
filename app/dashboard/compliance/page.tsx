@@ -4,51 +4,50 @@ import { useApi } from '../../context/api-context';
 
 export default function CompliancePage() {
   const { get } = useApi();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const month = new Date().toISOString().slice(0,7);
 
   useEffect(() => {
-    get('/compliance').then(setData).catch(console.error).finally(() => setLoading(false));
+    get('/compliance').then(setData).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px' };
-  const lbl = { fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 };
+  const d = data as any;
 
   return (
-    <div style={{ padding: 40, maxWidth: 880 }}>
-      <div style={{ marginBottom: 32 }}>
-        <p style={{ ...lbl, marginBottom: 6 }}>Compliance</p>
-        <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Monthly Review</h1>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>{currentMonth}</p>
-      </div>
+    <div style={{ padding: 40, maxWidth: 860 }}>
+      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--muted)', marginBottom: 6 }}>Compliance</p>
+      <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 4px' }}>Monthly Review</h1>
+      <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 32 }}>{month}</p>
+
       {loading ? (
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>Loading…</p>
-      ) : !data ? (
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--amber)' }}>Failed to load compliance data.</p>
+      ) : !d ? (
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--amber)' }}>No data yet — log some hours first.</p>
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 24 }}>
             {[
-              { label: 'Total Hours', val: Number(data.total_hours).toFixed(1), pass: null },
-              { label: 'Supervised', val: Number(data.supervision_pct).toFixed(1) + '%', pass: data.meets_supervision },
-              { label: 'Restricted %', val: Number(data.restricted_pct).toFixed(1) + '%', pass: data.meets_restricted },
+              { label: 'Total Hours', val: Number(d.total_hours||0).toFixed(1), color: 'var(--ink)' },
+              { label: 'Supervision %', val: Number(d.supervision_pct||0).toFixed(1)+'%', color: d.meets_supervision ? 'var(--spruce)' : 'var(--amber)' },
+              { label: 'Restricted %', val: Number(d.restricted_pct||0).toFixed(1)+'%', color: d.meets_restricted ? 'var(--spruce)' : 'var(--amber)' },
             ].map(s => (
-              <div key={s.label} style={card}>
-                <p style={lbl}>{s.label}</p>
-                <p style={{ fontFamily: 'var(--display)', fontSize: 32, fontWeight: 600, margin: 0, lineHeight: 1, color: s.pass === null ? 'var(--ink)' : s.pass ? 'var(--spruce)' : 'var(--amber)' }}>{s.val}</p>
+              <div key={s.label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px' }}>
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</p>
+                <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: s.color, margin: 0, lineHeight: 1 }}>{s.val}</p>
               </div>
             ))}
           </div>
-          <div style={{ ...card, marginBottom: 24 }}>
-            <p style={{ ...lbl, marginBottom: 20 }}>BACB Requirements</p>
+
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px', marginBottom: 24 }}>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--muted)', marginBottom: 20 }}>BACB Requirements</p>
             {[
-              { label: 'Supervision >= 5% of hours', pass: data.meets_supervision, val: Number(data.supervision_pct).toFixed(1) + '%' },
-              { label: 'Restricted hours <= 50% of total', pass: data.meets_restricted, val: Number(data.restricted_pct).toFixed(1) + '%' },
-            ].map(r => (
-              <div key={r.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+              { label: 'Supervision >= 5% of hours', pass: d.meets_supervision, val: Number(d.supervision_pct||0).toFixed(1)+'%' },
+              { label: 'Restricted hours <= 50% of total', pass: d.meets_restricted, val: Number(d.restricted_pct||0).toFixed(1)+'%' },
+            ].map((r, i, arr) => (
+              <div key={r.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: i < arr.length-1 ? '1px solid var(--border)' : 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: r.pass ? 'var(--spruce)' : 'var(--amber)' }} />
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: r.pass ? 'var(--spruce)' : 'var(--amber)', flexShrink: 0 }} />
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)' }}>{r.label}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -58,12 +57,13 @@ export default function CompliancePage() {
               </div>
             ))}
           </div>
-          <div style={card}>
-            <p style={{ ...lbl, marginBottom: 20 }}>Hours Breakdown</p>
-            {[['Unrestricted', data.unrestricted_hours],['Restricted', data.restricted_hours],['Supervised', data.supervised_hours],['Total', data.total_hours]].map(([label, val], i, arr) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
+
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px' }}>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--muted)', marginBottom: 20 }}>Hours Breakdown</p>
+            {[['Unrestricted', d.unrestricted_hours],['Restricted', d.restricted_hours],['Supervised', d.supervised_hours],['Total', d.total_hours]].map(([label, val], i, arr) => (
+              <div key={String(label)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < arr.length-1 ? '1px solid var(--border)' : 'none' }}>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>{label}</span>
-                <span style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 500, color: 'var(--ink)' }}>{Number(val).toFixed(1)}</span>
+                <span style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 500, color: 'var(--ink)' }}>{Number(val||0).toFixed(1)}</span>
               </div>
             ))}
           </div>

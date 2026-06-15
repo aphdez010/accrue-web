@@ -2,7 +2,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
 
 export const metadata = {
-  title: 'Accrue',
+  title: 'Supervisd',
   description: 'BACB Compliance Platform',
 };
 

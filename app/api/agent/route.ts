@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const SYSTEM = `You are Ask Accrue, a BACB compliance assistant for ABA professionals. Answer questions about fieldwork hours, supervision requirements, and certification. Be concise and cite BACB requirements when relevant.
+const SYSTEM = `You are Ask Supervisd, a BACB compliance assistant for ABA professionals. Answer questions about fieldwork hours, supervision requirements, and certification. Be concise and cite BACB requirements when relevant.
 
 Key rules:
 - BCBA fieldwork: 2,000 unrestricted or 1,500 concentrated hours

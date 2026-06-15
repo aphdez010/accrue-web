@@ -73,10 +73,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               { label: 'Vault', icon: '▣', href: '/dashboard/vault' },
               { label: 'Import history', icon: '⬆', href: '/dashboard/import' },
             ] : [
-              { label: 'Roster', icon: '◉', href: '/dashboard' },
-              { label: 'Sign forms', icon: '✦', href: '/dashboard' },
-              { label: 'Records', icon: '▣', href: '/dashboard' },
-              { label: 'My CEUs', icon: '↗', href: '/dashboard' },
+              { label: 'Roster', icon: '◉', href: '/dashboard/roster' },
+              { label: 'Sign forms', icon: '✦', href: '/dashboard/forms' },
+              { label: 'Records', icon: '▣', href: '/dashboard/records' },
+              { label: 'My CEUs', icon: '↗', href: '/dashboard/ceus' },
             ]).map(item => (
               <a key={item.label} href={item.href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'var(--muted)', fontWeight: 500, marginBottom: 2, textDecoration: 'none', fontSize: 13.5, transition: 'all .15s' }}>
                 <span style={{ width: 18, textAlign: 'center', fontSize: 15 }}>{item.icon}</span>

@@ -69,9 +69,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {(role === 'trainee' ? [
               { label: 'Today', icon: '◉', href: '/dashboard' },
               { label: 'Log hours', icon: '+', href: '/dashboard/fieldwork' },
-              { label: 'Accrual record', icon: '↗', href: '/dashboard/fieldwork' },
-              { label: 'Vault', icon: '▣', href: '/dashboard/compliance' },
-              { label: 'Import history', icon: '⬆', href: '/dashboard/fieldwork' },
+              { label: 'Accrual record', icon: '↗', href: '/dashboard/compliance' },
+              { label: 'Vault', icon: '▣', href: '/dashboard/vault' },
+              { label: 'Import history', icon: '⬆', href: '/dashboard' },
             ] : [
               { label: 'Roster', icon: '◉', href: '/dashboard' },
               { label: 'Sign forms', icon: '✦', href: '/dashboard' },

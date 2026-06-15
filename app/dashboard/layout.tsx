@@ -3,7 +3,7 @@ import { ApiProvider } from '../context/api-context';
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useClerk, useUser } from '@clerk/nextjs';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -22,6 +22,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+  const { signOut } = useClerk();
+  const { user } = useUser();
+  const [mobileAgentOpen, setMobileAgentOpen] = useState(false);
   const [totalHours, setTotalHours] = useState<number>(0);
   const { getToken } = useAuth();
   useEffect(() => {
@@ -157,15 +160,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>5-yr deadline Aug 2029</div>
           </div>
 
-          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between' }}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--spruce-dim)', border: '1px solid var(--spruce)', color: 'var(--spruce)', fontWeight: 600, fontSize: 12, display: 'grid', placeItems: 'center', flexShrink: 0 }}>A</div>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>Arian</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{user?.firstName || 'Arian'}</div>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '.08em', textTransform: 'uppercase' }}>BCBA</div>
             </div>
           </div>
+          <button onClick={() => signOut()} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 10, padding: '4px 8px', borderRadius: 6, flexShrink: 0 }}>↪ out</button>
         </aside>}
 
+        {/* MOBILE AGENT OVERLAY */}
+        {isMobile && mobileAgentOpen && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--surface)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 700 }}>Ask Supervisd ✦</div>
+              <button onClick={() => setMobileAgentOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {messages.length === 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>Quick questions</div>
+                  {quickQuestions.map(q => (
+                    <button key={q} onClick={() => { handleSend(q); }} style={{ textAlign: 'left', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', cursor: 'pointer' }}>{q}</button>
+                  ))}
+                </div>
+              )}
+              {messages.map((m, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ background: m.role === 'user' ? 'var(--spruce)' : 'var(--bg)', color: m.role === 'user' ? '#fff' : 'var(--ink)', padding: '10px 14px', borderRadius: 12, fontSize: 13, lineHeight: 1.5, maxWidth: '90%', fontFamily: 'var(--sans)' }}>{m.content}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
+              <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Ask a compliance question..." style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, outline: 'none', color: 'var(--ink)' }} />
+              <button onClick={() => handleSend()} disabled={loading} style={{ background: 'var(--spruce)', border: 0, color: '#fff', font: '600 13px var(--sans)', padding: '10px 16px', borderRadius: 10, cursor: 'pointer' }}>Send</button>
+            </div>
+          </div>
+        )}
+        {isMobile && (
+          <button onClick={() => setMobileAgentOpen(true)} style={{ position: 'fixed', bottom: 24, right: 20, zIndex: 90, background: 'var(--spruce)', color: '#fff', border: 'none', borderRadius: '50%', width: 52, height: 52, fontSize: 20, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✦</button>
+        )}
         {/* MAIN */}
         <main style={{ overflowY: 'auto', background: 'var(--bg)' }}>
           {children}

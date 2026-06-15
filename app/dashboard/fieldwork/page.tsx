@@ -4,11 +4,11 @@ import { useApi } from '../../context/api-context';
 
 export default function FieldworkPage() {
   const { get, post } = useApi();
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState<any[]>([]);
   const [totalHours, setTotalHours] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     entry_date: '',
     hours: '',

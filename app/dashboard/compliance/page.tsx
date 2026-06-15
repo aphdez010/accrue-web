@@ -4,7 +4,7 @@ import { useApi } from '../../context/api-context';
 
 export default function CompliancePage() {
   const { get } = useApi();
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const currentMonth = new Date().toISOString().slice(0, 7);
 

@@ -3,6 +3,7 @@ import { ApiProvider } from '../context/api-context';
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
+import { useAuth } from '@clerk/nextjs';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -14,6 +15,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setRole(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
   }, [pathname]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [totalHours, setTotalHours] = useState<number>(0);
+  const { getToken } = useAuth();
+  useEffect(() => {
+    const fetchHours = async () => {
+      try {
+        const token = await getToken();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
+        const res = await fetch(`${apiUrl}/compliance`, { headers: { Authorization: `Bearer ${token}` } });
+        const d = await res.json();
+        if (d.totalHours !== undefined) setTotalHours(Number(d.totalHours));
+      } catch {}
+    };
+    fetchHours();
+  }, []);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -94,11 +109,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ margin: 8, padding: 12, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Total accrual</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 500, color: 'var(--ink)' }}>0</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 500, color: 'var(--ink)' }}>{totalHours.toFixed(0)}</span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginLeft: 2 }}>/ 2,000 hrs</span>
             </div>
             <div style={{ height: 4, background: 'var(--border2)', borderRadius: 99, overflow: 'hidden', margin: '8px 0' }}>
-              <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: '0%' }} />
+              <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: `${Math.min((totalHours / 2000) * 100, 100).toFixed(1)}%` }} />
             </div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>5-yr deadline Aug 2029</div>
           </div>

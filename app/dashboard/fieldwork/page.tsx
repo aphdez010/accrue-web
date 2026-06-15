@@ -30,8 +30,8 @@ export default function FieldworkPage() {
       const res = await get('/fieldwork?month=' + currentMonth);
       const list = res?.entries ?? res ?? [];
       setEntries(list);
-      setTotalHours(list.reduce((s, e) => s + Number(e.hours), 0));
-    } catch (e) {}
+      setTotalHours(list.reduce((s: number, e: any) => s + Number(e.hours), 0));
+    } catch (e: any) {}
   }
 
   async function handleSubmit() {
@@ -51,7 +51,7 @@ export default function FieldworkPage() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       load();
-    } catch (e) {
+    } catch (e: any) {
       setError(e.message || 'Failed to log entry');
     } finally {
       setSubmitting(false);

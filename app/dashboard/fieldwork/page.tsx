@@ -1,11 +1,22 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useApi } from '../../context/api-context';
+import { useAuth } from '@clerk/nextjs';
 
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
 const TYPES = ['Unrestricted Hours','Restricted Hours','Supervision - Individual','Supervision - Group','Experience - Other'];
 
+async function call(method, path, token, body) {
+  const res = await fetch(API + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export default function FieldworkPage() {
-  const api = useApi();
+  const { getToken } = useAuth();
   const [entries, setEntries] = useState([]);
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -26,7 +37,8 @@ export default function FieldworkPage() {
 
   async function load() {
     try {
-      const r = await api.get('/fieldwork?month=' + month);
+      const token = await getToken();
+      const r = await call('GET', '/fieldwork?month=' + month, token, null);
       const list = r?.entries ?? r ?? [];
       setEntries(list);
       setTotal(list.reduce((s, e) => s + Number(e.hours), 0));
@@ -37,7 +49,8 @@ export default function FieldworkPage() {
     if (!date || !hours) return;
     setBusy(true); setErr('');
     try {
-      await api.post('/fieldwork', { entry_date: date, hours: parseFloat(hours), activity_type: type, notes: notes||null, is_supervised: supervised, supervisor_name: supervisor||null });
+      const token = await getToken();
+      await call('POST', '/fieldwork', token, { entry_date: date, hours: parseFloat(hours), activity_type: type, notes: notes||null, is_supervised: supervised, supervisor_name: supervisor||null });
       setHours(''); setNotes(''); setSupervised(false); setSupervisor('');
       setOk(true); setTimeout(() => setOk(false), 3000);
       load();

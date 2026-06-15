@@ -1,5 +1,6 @@
 'use client';
-import React, { useState } from 'react';
+import { useState, CSSProperties } from 'react';
+import { useApi } from '../../context/api-context';
 import { useApi } from '../../context/api-context';
 
 interface VaultDoc {

@@ -20,7 +20,7 @@ export default function CompliancePage() {
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   useEffect(() => {
-    get(`/compliance/month/${currentMonth}`)
+    get('/compliance')
       .then(setData)
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -37,7 +37,7 @@ export default function CompliancePage() {
     fontFamily: 'var(--mono)',
     fontSize: 10,
     letterSpacing: '0.08em',
-    textTransform: 'uppercase' as const,
+    textTransform: 'uppercase',
     color: 'var(--muted)',
     marginBottom: 4,
   };
@@ -63,15 +63,10 @@ export default function CompliancePage() {
 
   return (
     <div style={{ padding: '40px', maxWidth: 880 }}>
-
       <div style={{ marginBottom: 32 }}>
         <p style={{ ...label, marginBottom: 6 }}>Compliance</p>
-        <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
-          Monthly Review
-        </h1>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
-          {currentMonth}
-        </p>
+        <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Monthly Review</h1>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>{currentMonth}</p>
       </div>
 
       {loading ? (
@@ -80,7 +75,6 @@ export default function CompliancePage() {
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--amber)' }}>Failed to load compliance data.</p>
       ) : (
         <>
-          {/* Stats grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
             <div style={card}>
               <p style={label}>Total Hours</p>
@@ -96,10 +90,9 @@ export default function CompliancePage() {
             </div>
           </div>
 
-          {/* Requirements */}
           <div style={{ ...card, marginBottom: 24 }}>
             <p style={{ ...label, marginBottom: 20 }}>BACB Requirements</p>
-            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[
                 { label: 'Supervision >= 5% of hours', pass: data.meets_supervision, value: `${Number(data.supervision_pct).toFixed(1)}%` },
                 { label: 'Restricted hours <= 50% of total', pass: data.meets_restricted, value: `${Number(data.restricted_pct).toFixed(1)}%` },
@@ -118,7 +111,6 @@ export default function CompliancePage() {
             </div>
           </div>
 
-          {/* Hours breakdown */}
           <div style={card}>
             <p style={{ ...label, marginBottom: 20 }}>Hours Breakdown</p>
             {[

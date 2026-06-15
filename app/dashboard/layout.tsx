@@ -76,15 +76,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ApiProvider>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr 360px', height: '100vh', background: 'var(--bg)', fontFamily: 'var(--sans)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr 360px', gridTemplateRows: isMobile ? 'auto 1fr' : '1fr', height: '100vh', background: 'var(--bg)', fontFamily: 'var(--sans)' }}>
       {isMobile && (
-        <div style={{ gridColumn: '1', background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
-          <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
-          <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 4 }}>
-            {(['trainee', 'bcba'] as const).map(r => (
-              <button key={r} onClick={() => setRole(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10px var(--sans)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer' }}>
-                {r === 'trainee' ? 'Trainee' : 'BCBA'}
-              </button>
+        <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50 }}>
+          <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
+            <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2 }}>
+              {(['trainee', 'bcba'] as const).map(r => (
+                <button key={r} onClick={() => setRole(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10px var(--sans)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer' }}>
+                  {r === 'trainee' ? 'Trainee' : 'BCBA'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', overflowX: 'auto', padding: '0 12px 12px', gap: 6 }}>
+            {(role === 'trainee' ? [
+              { label: 'Today', href: '/dashboard' },
+              { label: 'Log hours', href: '/dashboard/fieldwork' },
+              { label: 'Accrual', href: '/dashboard/compliance' },
+              { label: 'Vault', href: '/dashboard/vault' },
+              { label: 'Import', href: '/dashboard/import' },
+            ] : [
+              { label: 'Roster', href: '/dashboard/roster' },
+              { label: 'Sign forms', href: '/dashboard/forms' },
+              { label: 'Records', href: '/dashboard/records' },
+              { label: 'My CEUs', href: '/dashboard/ceus' },
+            ]).map(item => (
+              <a key={item.label} href={item.href} style={{ display: 'inline-block', padding: '6px 14px', borderRadius: 20, background: pathname === item.href ? 'var(--spruce)' : 'var(--bg)', border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 11, color: pathname === item.href ? '#fff' : 'var(--ink)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {item.label}
+              </a>
             ))}
           </div>
         </div>

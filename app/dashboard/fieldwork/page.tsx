@@ -11,9 +11,9 @@ export default function FieldworkPage() {
   useEffect(() => {
     get("/fieldwork?month=" + month)
       .then(r => {
-        const list = r?.entries ?? r ?? [];
+        const list = Array.isArray(r) ? r : Array.isArray(r?.entries) ? r.entries : [];
         setEntries(list);
-        setTotal(list.reduce((s, e) => s + Number(e.hours), 0));
+        setTotal(list.reduce((s, e) => s + Number(e.hours || 0), 0));
       })
       .catch(() => {});
   }, []);

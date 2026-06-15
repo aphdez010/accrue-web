@@ -4,10 +4,10 @@ import { useApi } from '../context/api-context';
 
 export default function DashboardPage() {
   const api = useApi();
-  const [data, setData] = useState(null);
+const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    api.get('/compliance').then(setData).catch(console.error);
+    api.get('/compliance').then(setData).catch(() => {});
   }, []);
 
   return (

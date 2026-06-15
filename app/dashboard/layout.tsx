@@ -1,15 +1,56 @@
 'use client';
 import { ApiProvider } from '../context/api-context';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+
+type Message = { role: 'user' | 'assistant'; content: string };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<'trainee' | 'bcba'>('trainee');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSend = async (text?: string) => {
+    const msg = text || input;
+    if (!msg.trim() || loading) return;
+    setInput('');
+    const userMsg: Message = { role: 'user', content: msg };
+    setMessages(prev => [...prev, userMsg]);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, history: messages }),
+      });
+      const data = await res.json();
+      setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Something went wrong. Try again.' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const quickQuestions = [
+    'Am I on track this month?',
+    'What happens if I end at 4% supervision?',
+    'Is training a caregiver restricted or unrestricted?',
+    'What do I still need before month end?',
+    'Can group supervision exceed individual?',
+  ];
 
   return (
     <ApiProvider>
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 360px', height: '100vh', background: 'var(--bg)', fontFamily: 'var(--sans)' }}>
 
-        {/* ── SIDEBAR ── */}
+        {/* SIDEBAR */}
         <aside style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Accrue</div>
@@ -27,14 +68,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <nav style={{ padding: 8, flex: 1 }}>
             {(role === 'trainee' ? [
               { label: 'Today', icon: '◉', href: '/dashboard' },
-              { label: 'Log hours', icon: '＋', href: '/dashboard/fieldwork' },
+              { label: 'Log hours', icon: '+', href: '/dashboard/fieldwork' },
               { label: 'Accrual record', icon: '↗', href: '/dashboard/fieldwork' },
-              { label: 'Vault', icon: '▤', href: '/dashboard/compliance' },
+              { label: 'Vault', icon: '▣', href: '/dashboard/compliance' },
               { label: 'Import history', icon: '⬆', href: '/dashboard/fieldwork' },
             ] : [
               { label: 'Roster', icon: '◉', href: '/dashboard' },
-              { label: 'Sign forms', icon: '✎', href: '/dashboard' },
-              { label: 'Records', icon: '▤', href: '/dashboard' },
+              { label: 'Sign forms', icon: '✦', href: '/dashboard' },
+              { label: 'Records', icon: '▣', href: '/dashboard' },
               { label: 'My CEUs', icon: '↗', href: '/dashboard' },
             ]).map(item => (
               <a key={item.label} href={item.href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'var(--muted)', fontWeight: 500, marginBottom: 2, textDecoration: 'none', fontSize: 13.5, transition: 'all .15s' }}>
@@ -45,7 +86,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div style={{ margin: 8, padding: 12, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 8 }}>Total accrual</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Total accrual</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 500, color: 'var(--ink)' }}>0</span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginLeft: 2 }}>/ 2,000 hrs</span>
@@ -65,28 +106,57 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </aside>
 
-        {/* ── MAIN ── */}
+        {/* MAIN */}
         <main style={{ overflowY: 'auto', background: 'var(--bg)' }}>
           {children}
         </main>
 
-        {/* ── AGENT PANEL ── */}
+        {/* AGENT PANEL */}
         <aside style={{ background: 'var(--surface)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '20px 20px 14px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 700, marginBottom: 2 }}>Ask Accrue ✦</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '.08em', textTransform: 'uppercase' }}>Answers from the BACB handbook</div>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted2)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>Quick questions</div>
-              {['Am I on track this month?', 'What happens if I end at 4% supervision?', 'Is training a caregiver restricted or unrestricted?', 'What do I still need before month end?', 'Can group supervision exceed individual?'].map(q => (
-                <button key={q} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--ink)', font: '500 12px var(--sans)', padding: '10px 12px', borderRadius: 10, textAlign: 'left', cursor: 'pointer', lineHeight: 1.4 }}>{q}</button>
-              ))}
-            </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {messages.length === 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>Quick questions</div>
+                {quickQuestions.map(q => (
+                  <button key={q} onClick={() => handleSend(q)} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', font: '500 12px var(--sans)', padding: '10px 12px', borderRadius: 10, textAlign: 'left', cursor: 'pointer', lineHeight: 1.4 }}>{q}</button>
+                ))}
+              </div>
+            )}
+
+            {messages.map((m, i) => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{m.role === 'user' ? 'You' : 'Accrue'}</div>
+                <div style={{ background: m.role === 'user' ? 'var(--spruce)' : 'var(--surface2)', color: m.role === 'user' ? '#fff' : 'var(--ink)', padding: '10px 14px', borderRadius: 12, fontSize: 13, lineHeight: 1.5, maxWidth: '90%', fontFamily: 'var(--sans)' }}><ReactMarkdown>{m.content}</ReactMarkdown></div>
+              </div>
+            ))}
+
+            {loading && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Accrue</div>
+                <div style={{ background: 'var(--surface2)', padding: '10px 14px', borderRadius: 12, fontSize: 13, color: 'var(--muted)' }}>Thinking…</div>
+              </div>
+            )}
+            <div ref={bottomRef} />
           </div>
+
           <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
-            <textarea placeholder="Ask a compliance question…" rows={1} style={{ flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--ink)', font: '400 13px var(--sans)', padding: '10px 14px', borderRadius: 10, outline: 'none', resize: 'none' }} />
-            <button style={{ background: 'var(--spruce)', border: 0, color: '#fff', font: '600 13px var(--sans)', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', alignSelf: 'flex-end' }}>Send</button>
+            <textarea
+              placeholder="Ask a compliance question…"
+              rows={1}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              style={{ flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--ink)', font: '400 13px var(--sans)', padding: '10px 14px', borderRadius: 10, outline: 'none', resize: 'none' }}
+            />
+            <button
+              onClick={() => handleSend()}
+              disabled={loading}
+              style={{ background: 'var(--spruce)', border: 0, color: '#fff', font: '600 13px var(--sans)', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', alignSelf: 'flex-end', opacity: loading ? 0.6 : 1 }}>Send</button>
           </div>
         </aside>
 

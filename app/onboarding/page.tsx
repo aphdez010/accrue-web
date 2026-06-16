@@ -1,10 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 
 export default function OnboardingPage() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const router = useRouter();
   const [role, setRole] = useState<'rbt' | 'bcba'>('rbt');
   const [credential, setCredential] = useState('');
@@ -16,7 +17,7 @@ export default function OnboardingPage() {
     setSaving(true);
     setError('');
     try {
-      const token = await user.getToken ? (await (window as any).Clerk.session.getToken()) : '';
+      const token = await getToken();
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
       const res = await fetch(`${apiUrl}/professionals`, {
         method: 'POST',
@@ -28,9 +29,9 @@ export default function OnboardingPage() {
           credential_number: credential || null,
         }),
       });
-      if (!res.ok) throw new Error('Failed to create profile');
+      if (!res.ok) throw new Error('Failed');
       router.push('/dashboard');
-    } catch (e: any) {
+    } catch (e) {
       setError('Something went wrong. Please try again.');
     }
     setSaving(false);
@@ -40,7 +41,7 @@ export default function OnboardingPage() {
     <div style={{ minHeight: '100vh', background: '#F0F4F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ background: '#fff', border: '1px solid #e2e8e4', borderRadius: 16, padding: '40px 48px', maxWidth: 480, width: '100%' }}>
         <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 24, fontWeight: 800, color: '#0F2018', letterSpacing: '-.02em', marginBottom: 4 }}>Welcome to Supervisd</div>
-        <p style={{ fontFamily: 'var(--mono, monospace)', fontSize: 12, color: '#6b7c74', marginBottom: 32 }}>Tell us about your role to get started</p>
+        <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#6b7c74', marginBottom: 32 }}>Tell us about your role to get started</p>
 
         <div style={{ marginBottom: 24 }}>
           <p style={{ fontFamily: 'monospace', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: '#6b7c74', marginBottom: 10 }}>I am a</p>

@@ -1,7 +1,7 @@
 'use client';
 import { ApiProvider } from '../context/api-context';
 import { useState, useRef, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { useAuth, useClerk, useUser } from '@clerk/nextjs';
 
@@ -9,6 +9,7 @@ type Message = { role: 'user' | 'assistant'; content: string };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const bcbaRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus'];
   const [role, setRole] = useState<'trainee' | 'bcba'>(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
   useEffect(() => {
@@ -32,6 +33,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       try {
         const token = await getToken();
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
+        const meRes = await fetch(`${apiUrl}/professionals/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (meRes.status === 404) { router.push('/onboarding'); return; }
         const res = await fetch(`${apiUrl}/compliance`, { headers: { Authorization: `Bearer ${token}` } });
         const d = await res.json();
         if (d.totalHours !== undefined) setTotalHours(Number(d.totalHours));

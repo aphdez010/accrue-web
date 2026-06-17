@@ -5,6 +5,13 @@ import { useApi } from '../context/api-context';
 export default function DashboardPage() {
   const api = useApi();
   const [data, setData] = useState<any>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const month = new Date().toISOString().slice(0, 7);
   const monthLabel = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
@@ -15,9 +22,9 @@ export default function DashboardPage() {
   const d = data;
 
   const statCard = (label: string, value: string, sub?: string, color?: string) => (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '14px 16px' : '20px 24px' }}>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 6 }}>{label}</p>
-      <p style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 700, color: color || 'var(--ink)', margin: 0, lineHeight: 1 }}>{value}</p>
+      <p style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 22 : 28, fontWeight: 700, color: color || 'var(--ink)', margin: 0, lineHeight: 1 }}>{value}</p>
       {sub && <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{sub}</p>}
     </div>
   );
@@ -40,7 +47,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div style={{ padding: 40, maxWidth: 900 }}>
+    <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 900 }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
         <div>
@@ -51,7 +58,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Top 6 stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
         {statCard('Total Hours', d ? Number(d.totalHours||0).toFixed(1) : '—', d ? `${((d.totalHours/2000)*100).toFixed(1)}% of 2,000` : undefined)}
         {statCard('Supervised', d ? Number(d.supervisedHours||0).toFixed(1) + ' hrs' : '—', d ? `${Number(d.supervisionPct||0).toFixed(1)}% of total` : undefined, d?.supervisionMet ? 'var(--spruce)' : d ? 'var(--amber)' : undefined)}
         {statCard('Independent', d ? Number(d.independentHours||0).toFixed(1) + ' hrs' : '—', d ? `${d.totalHours > 0 ? (100 - d.supervisionPct).toFixed(1) : 0}% of total` : undefined)}
@@ -61,7 +68,7 @@ export default function DashboardPage() {
       </div>
 
       {/* BACB Requirements + Hours pace */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px' }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>BACB Requirements</p>
           {reqRow('Supervision ≥ 5%', d?.supervisionMet, d ? Number(d.supervisionPct||0).toFixed(1) + '%' : '—')}
@@ -96,7 +103,7 @@ export default function DashboardPage() {
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>Task List Coverage</p>
           <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>{d?.taskListCoverageCount || 0} / {d?.taskListCoverage?.length || 9} areas</span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 8 }}>
           {(d?.taskListCoverage || Array(9).fill({ area: '...', covered: false })).map((t: any, i: number) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: t.covered ? 'rgba(26,122,80,0.08)' : 'var(--bg)', border: `1px solid ${t.covered ? 'rgba(26,122,80,0.2)' : 'var(--border)'}` }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.covered ? 'var(--spruce)' : 'var(--border)', flexShrink: 0 }} />

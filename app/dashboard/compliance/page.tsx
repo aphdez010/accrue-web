@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../context/api-context';
 import SignatureCanvas from 'react-signature-canvas';
@@ -11,6 +11,13 @@ export default function CompliancePage() {
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [exporting, setExporting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const [showSigModal, setShowSigModal] = useState(false);
   const sigRef = useRef<any>(null);
 
@@ -70,7 +77,7 @@ export default function CompliancePage() {
 
   const badge = (pass: boolean, label: string, val: string) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid var(--border)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: isMobile ? '100%' : 'auto' }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: pass ? 'var(--spruce)' : 'var(--amber)', flexShrink: 0 }} />
         <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)' }}>{label}</span>
       </div>
@@ -82,8 +89,8 @@ export default function CompliancePage() {
   );
 
   return (
-    <div style={{ padding: 40, maxWidth: 900 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
+    <div style={{ padding: isMobile ? '16px 14px' : 40, maxWidth: 900 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 12 }}>
         <div>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Compliance</p>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 4px' }}>Monthly Review</h1>
@@ -94,7 +101,7 @@ export default function CompliancePage() {
             type="month"
             value={selectedMonth}
             onChange={e => setSelectedMonth(e.target.value)}
-            style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', backgroundColor: 'var(--surface)', outline: 'none', cursor: 'pointer' }}
+            style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', backgroundColor: 'var(--surface)', outline: 'none', cursor: 'pointer', flex: 1 }}
           />
           <button
             onClick={handleExportClick}
@@ -112,7 +119,7 @@ export default function CompliancePage() {
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--amber)' }}>No data yet — log some hours first.</p>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
             {card('Total Hours', Number(d.totalHours||0).toFixed(1), `${((d.totalHours/2000)*100).toFixed(1)}% of 2,000`)}
             {card('Supervised', Number(d.supervisedHours||0).toFixed(1)+' hrs', `${Number(d.supervisionPct||0).toFixed(1)}%`, d.supervisionMet ? 'var(--spruce)' : 'var(--amber)')}
             {card('Independent', Number(d.independentHours||0).toFixed(1)+' hrs', `${d.totalHours > 0 ? (100-d.supervisionPct).toFixed(1) : 0}%`)}
@@ -133,7 +140,7 @@ export default function CompliancePage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 16 }}>
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px' }}>
               <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>Hours Breakdown</p>
               {[['Unrestricted', d.unrestricted], ['Restricted', d.restricted], ['Supervised', d.supervisedHours], ['Independent', d.independentHours], ['Total', d.totalHours]].map(([label, val]) => (
@@ -159,7 +166,7 @@ export default function CompliancePage() {
               ) : d.projectedCompletionDate ? (
                 <>
                   <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Projected completion</p>
-                  <p style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{d.projectedCompletionDate}</p>
+                  <p style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{d.projectedCompletionDate ? new Date(d.projectedCompletionDate + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''}</p>
                   <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>based on current pace</p>
                 </>
               ) : (
@@ -173,7 +180,7 @@ export default function CompliancePage() {
               <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>Task List Coverage</p>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>{d.taskListCoverageCount} / {d.taskListCoverage?.length || 9} areas</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 8 }}>
               {(d.taskListCoverage || []).map((t: any) => (
                 <div key={t.area} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: t.covered ? 'rgba(26,122,80,0.08)' : 'var(--bg)', border: `1px solid ${t.covered ? 'rgba(26,122,80,0.2)' : 'var(--border)'}` }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.covered ? 'var(--spruce)' : 'var(--border)', flexShrink: 0 }} />

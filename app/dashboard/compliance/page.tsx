@@ -37,10 +37,10 @@ export default function CompliancePage() {
       const token = await getToken();
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       const base = apiUrl.replace(/\/api$/, '');
-      const res = await fetch(`${base}/export?month=${selectedMonth}`, {
+      const res = await fetch(`${base}/export`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signature: sigDataUrl }),
+        body: JSON.stringify({ signature: sigDataUrl, month: selectedMonth }),
       });
       if (!res.ok) throw new Error('Export failed');
       const blob = await res.blob();

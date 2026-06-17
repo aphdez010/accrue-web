@@ -86,10 +86,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {isMobile && (
         <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50 }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
-              <button onClick={() => signOut()} style={{ background: 'none', border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 10, padding: '3px 8px', borderRadius: 6 }}>Sign out</button>
-            </div>
+            <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
             <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2 }}>
               {(['trainee', 'bcba'] as const).map(r => (
                 <button key={r} onClick={() => setRole(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10px var(--sans)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer' }}>
@@ -97,6 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
               ))}
             </div>
+            <button onClick={() => signOut()} style={{ background: 'none', border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 10, padding: '4px 10px', borderRadius: 6, flexShrink: 0 }}>Sign out</button>
           </div>
           <div style={{ display: 'flex', overflowX: 'auto', padding: '0 12px 12px', gap: 6 }}>
             {(role === 'trainee' ? [

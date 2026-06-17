@@ -1,16 +1,51 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../context/api-context';
 
 export default function CompliancePage() {
   const { get } = useApi();
+  const { getToken } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const month = new Date().toISOString().slice(0, 7);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [exporting, setExporting] = useState(false);
+
+  const month = selectedMonth;
 
   useEffect(() => {
+    setLoading(true);
     get('/compliance').then(setData).catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const token = await getToken({ template: undefined });
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      const base = apiUrl.replace(/\/api$/, '');
+      const res = await fetch(`${base}/export?month=${selectedMonth}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        console.error('Export response:', err);
+        throw new Error('Export failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `supervisd-hours-${selectedMonth}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Failed to export PDF. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const d = data;
 
@@ -37,9 +72,28 @@ export default function CompliancePage() {
 
   return (
     <div style={{ padding: 40, maxWidth: 900 }}>
-      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Compliance</p>
-      <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 4px' }}>Monthly Review</h1>
-      <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 32 }}>{month}</p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
+        <div>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Compliance</p>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 4px' }}>Monthly Review</h1>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 0 }}>{month}</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(e.target.value)}
+            style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', backgroundColor: 'var(--surface)', outline: 'none', cursor: 'pointer' }}
+          />
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, backgroundColor: exporting ? 'rgba(26,122,80,0.4)' : 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 600, cursor: exporting ? 'not-allowed' : 'pointer', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}
+          >
+            {exporting ? 'Exporting...' : '↓ Export PDF'}
+          </button>
+        </div>
+      </div>
 
       {loading ? (
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>Loading...</p>
@@ -47,19 +101,17 @@ export default function CompliancePage() {
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--amber)' }}>No data yet — log some hours first.</p>
       ) : (
         <>
-          {/* Top stats grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
             {card('Total Hours', Number(d.totalHours||0).toFixed(1), `${((d.totalHours/2000)*100).toFixed(1)}% of 2,000`)}
-            {card('Supervised', Number(d.supervisedHours||0).toFixed(1) + ' hrs', `${Number(d.supervisionPct||0).toFixed(1)}%`, d.supervisionMet ? 'var(--spruce)' : 'var(--amber)')}
-            {card('Independent', Number(d.independentHours||0).toFixed(1) + ' hrs', `${d.totalHours > 0 ? (100 - d.supervisionPct).toFixed(1) : 0}%`)}
-            {card('Restricted', Number(d.restrictedPct||0).toFixed(1) + '%', d.restrictedMet ? 'Within limit' : 'Over 50% limit', d.restrictedMet ? 'var(--spruce)' : 'var(--amber)')}
+            {card('Supervised', Number(d.supervisedHours||0).toFixed(1)+' hrs', `${Number(d.supervisionPct||0).toFixed(1)}%`, d.supervisionMet ? 'var(--spruce)' : 'var(--amber)')}
+            {card('Independent', Number(d.independentHours||0).toFixed(1)+' hrs', `${d.totalHours > 0 ? (100-d.supervisionPct).toFixed(1) : 0}%`)}
+            {card('Restricted', Number(d.restrictedPct||0).toFixed(1)+'%', d.restrictedMet ? 'Within limit' : 'Over 50% limit', d.restrictedMet ? 'var(--spruce)' : 'var(--amber)')}
           </div>
 
-          {/* Monthly compliance checks */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px', marginBottom: 24 }}>
             <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>BACB Requirements — {month}</p>
-            {badge(d.supervisionMet, 'Supervision ≥ 5% of hours', Number(d.supervisionPct||0).toFixed(1) + '%')}
-            {badge(d.restrictedMet, 'Restricted hours ≤ 50% of total', Number(d.restrictedPct||0).toFixed(1) + '%')}
+            {badge(d.supervisionMet, 'Supervision ≥ 5% of hours', Number(d.supervisionPct||0).toFixed(1)+' %')}
+            {badge(d.restrictedMet, 'Restricted hours ≤ 50% of total', Number(d.restrictedPct||0).toFixed(1)+' %')}
             {badge(d.supervisionContacts >= 2, 'Supervision contacts this month', `${d.supervisionContacts} contact${d.supervisionContacts !== 1 ? 's' : ''}`)}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -70,7 +122,6 @@ export default function CompliancePage() {
             </div>
           </div>
 
-          {/* Hours breakdown + pace */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px' }}>
               <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>Hours Breakdown</p>
@@ -81,7 +132,6 @@ export default function CompliancePage() {
                 </div>
               ))}
             </div>
-
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px' }}>
               <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>Hours Pace</p>
               <div style={{ marginBottom: 16 }}>
@@ -107,7 +157,6 @@ export default function CompliancePage() {
             </div>
           </div>
 
-          {/* Task list coverage */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>Task List Coverage</p>

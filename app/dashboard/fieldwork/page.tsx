@@ -102,12 +102,24 @@ export default function FieldworkPage() {
         {/* Row 1: Date + Start + End + Hours */}
         {isMobile ? (
           <>
-            <div style={{ marginBottom: 12 }}><label style={lbl}>Date</label><input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...inp, textAlign: 'left' }} /></div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-              <div><label style={lbl}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={inp} /></div>
-              <div><label style={lbl}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={inp} /></div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={lbl}>Date</label>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...inp, width: '100%', boxSizing: 'border-box' }} />
             </div>
-            <div style={{ marginBottom: 16 }}><label style={lbl}>Hours</label><input type="number" step="0.25" min="0" placeholder="Auto or manual" value={hours} onChange={e => setHours(e.target.value)} style={inp} /></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+              <div>
+                <label style={lbl}>Start Time</label>
+                <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={{ ...inp, width: '100%', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={lbl}>End Time</label>
+                <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={{ ...inp, width: '100%', boxSizing: 'border-box' }} />
+              </div>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={lbl}>Hours</label>
+              <input type="number" step="0.25" min="0" placeholder="Auto or manual" value={hours} onChange={e => setHours(e.target.value)} style={{ ...inp, width: '100%', boxSizing: 'border-box' }} />
+            </div>
           </>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>

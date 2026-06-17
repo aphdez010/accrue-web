@@ -4,85 +4,103 @@ import { useApi } from '../context/api-context';
 
 export default function DashboardPage() {
   const api = useApi();
-const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<any>(null);
+  const month = new Date().toISOString().slice(0, 7);
+  const monthLabel = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
   useEffect(() => {
     api.get('/compliance').then(setData).catch(() => {});
   }, []);
 
+  const d = data;
+
+  const statCard = (label: string, value: string, sub?: string, color?: string) => (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}>
+      <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 6 }}>{label}</p>
+      <p style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 700, color: color || 'var(--ink)', margin: 0, lineHeight: 1 }}>{value}</p>
+      {sub && <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{sub}</p>}
+    </div>
+  );
+
+  const reqRow = (label: string, pass: boolean | undefined, val: string, last?: boolean) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 0', borderBottom: last ? 'none' : '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: pass === undefined ? 'var(--border)' : pass ? 'var(--spruce)' : 'var(--amber)', flexShrink: 0 }} />
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>{label}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>{val}</span>
+        {pass !== undefined && (
+          <span style={{ padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: pass ? 'rgba(26,122,80,0.1)' : 'rgba(255,160,0,0.1)', color: pass ? 'var(--spruce)' : 'var(--amber)' }}>
+            {pass ? '✓' : '!'}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div>
-      <div style={{ padding: '28px 32px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <div style={{ padding: 40, maxWidth: 900 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
         <div>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '.12em', textTransform: 'uppercase', marginBottom: 6 }}>June 2026 · Supervised Fieldwork</div>
-          <div style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.02em' }}>Your compliance dashboard</div>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>{monthLabel} · Supervised Fieldwork</p>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-.02em' }}>Your compliance dashboard</h1>
         </div>
-        <a href="/dashboard/fieldwork" style={{ background: 'var(--spruce)', color: '#fff', font: '600 13px var(--sans)', padding: '11px 20px', borderRadius: 10, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 4 }}>+ Log hours</a>
+        <a href="/dashboard/fieldwork" style={{ background: 'var(--spruce)', color: '#fff', font: '600 13px var(--sans)', padding: '11px 20px', borderRadius: 10, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>+ Log hours</a>
       </div>
 
-      <div style={{ padding: '24px 32px 0' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '.12em', textTransform: 'uppercase', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-          Cumulative fieldwork record
-          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+      {/* Top 6 stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
+        {statCard('Total Hours', d ? Number(d.totalHours||0).toFixed(1) : '—', d ? `${((d.totalHours/2000)*100).toFixed(1)}% of 2,000` : undefined)}
+        {statCard('Supervised', d ? Number(d.supervisedHours||0).toFixed(1) + ' hrs' : '—', d ? `${Number(d.supervisionPct||0).toFixed(1)}% of total` : undefined, d?.supervisionMet ? 'var(--spruce)' : d ? 'var(--amber)' : undefined)}
+        {statCard('Independent', d ? Number(d.independentHours||0).toFixed(1) + ' hrs' : '—', d ? `${d.totalHours > 0 ? (100 - d.supervisionPct).toFixed(1) : 0}% of total` : undefined)}
+        {statCard('Restricted %', d ? Number(d.restrictedPct||0).toFixed(1) + '%' : '—', d?.restrictedMet ? 'Within 50% limit' : 'Over limit', d?.restrictedMet ? 'var(--spruce)' : d ? 'var(--amber)' : undefined)}
+        {statCard('Contacts This Month', d ? String(d.supervisionContacts || 0) : '—', d?.supervisionContacts >= 2 ? 'Minimum met' : 'Min. 2 required', d?.supervisionContacts >= 2 ? 'var(--spruce)' : d ? 'var(--amber)' : undefined)}
+        {statCard('Projected Completion', d?.projectedCompletionDate === 'complete' ? 'Done ✓' : d?.projectedCompletionDate || '—', 'at current pace', d?.projectedCompletionDate === 'complete' ? 'var(--spruce)' : undefined)}
+      </div>
+
+      {/* BACB Requirements + Hours pace */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px' }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>BACB Requirements</p>
+          {reqRow('Supervision ≥ 5%', d?.supervisionMet, d ? Number(d.supervisionPct||0).toFixed(1) + '%' : '—')}
+          {reqRow('Restricted ≤ 50%', d?.restrictedMet, d ? Number(d.restrictedPct||0).toFixed(1) + '%' : '—')}
+          {reqRow('Supervision contacts', d ? d.supervisionContacts >= 2 : undefined, d ? `${d.supervisionContacts} this month` : '—')}
+          {reqRow('Monthly observation', d?.monthlyObservationMet, d?.monthlyObservationMet ? 'Completed' : 'Not yet', true)}
         </div>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,.06)', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 0%, var(--spruce-glow), transparent 60%)', pointerEvents: 'none' }} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderBottom: '1px solid var(--border)', paddingBottom: 20, marginBottom: 20 }}>
-            {[
-              { val: data ? data.supervisionPct.toFixed(1)+'%' : '—', label: 'Supervision this month', color: data?.supervisionMet ? 'var(--spruce)' : 'var(--amber)' },
-              { val: data?.totalHours ?? '—', label: 'Hours logged', color: 'var(--ink)' },
-              { val: data ? data.restrictedPct.toFixed(1)+'%' : '—', label: 'Restricted %', color: data?.restrictedMet ? 'var(--ink)' : 'var(--red)' },
-              { val: data?.unrestricted ?? '—', label: 'Unrestricted hours', color: 'var(--ink)' },
-            ].map((s, i) => (
-              <div key={i} style={{ padding: '0 20px', borderRight: i < 3 ? '1px solid var(--border)' : 'none', ...(i===0 ? {paddingLeft:0} : {}) }}>
-                <div style={{ fontFamily: 'var(--display)', fontSize: 32, fontWeight: 700, lineHeight: 1, letterSpacing: '-.03em', marginBottom: 4, color: s.color }}>{s.val}</div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{s.label}</div>
-              </div>
-            ))}
+
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px' }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>Hours Pace</p>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{d ? Number(d.totalHours||0).toFixed(0) : 0} / 2,000 hrs</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{d ? ((d.totalHours/2000)*100).toFixed(1) : 0}%</span>
+            </div>
+            <div style={{ height: 8, background: 'var(--border)', borderRadius: 99, overflow: 'hidden' }}>
+              <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: `${d ? Math.min((d.totalHours/2000)*100, 100) : 0}%`, transition: 'width .6s ease' }} />
+            </div>
           </div>
-          {[
-            { label: 'Supervision >= 5% of hours', met: data?.supervisionMet, val: data ? data.supervisionPct.toFixed(1)+'%' : '—' },
-            { label: 'Restricted hours <= 50% of total', met: data?.restrictedMet, val: data ? data.restrictedPct.toFixed(1)+'%' : '—' },
-          ].map((r, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: i===0 ? '1px solid var(--border)' : 'none' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: r.met===undefined ? 'var(--border2)' : r.met ? 'var(--spruce)' : 'var(--amber)', flexShrink: 0 }} />
-              <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{r.label}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: r.met ? 'var(--spruce)' : 'var(--amber)' }}>{r.val}</div>
+          {[['Unrestricted', d?.unrestricted], ['Restricted', d?.restricted], ['Supervised', d?.supervisedHours], ['Independent', d?.independentHours]].map(([label, val]) => (
+            <div key={String(label)} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{label}</span>
+              <span style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{val !== undefined && val !== null ? Number(val).toFixed(1) : '—'}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: '20px 32px' }}>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
-          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            Requirements
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, padding: '4px 8px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: '.06em', background: data?.supervisionMet && data?.restrictedMet ? 'var(--spruce-dim)' : 'var(--amber-dim)', color: data?.supervisionMet && data?.restrictedMet ? 'var(--spruce)' : 'var(--amber)' }}>
-              {data?.supervisionMet && data?.restrictedMet ? 'Compliant' : 'Action needed'}
-            </span>
-          </div>
-          {[
-            { label: 'Supervision >= 5%', met: data?.supervisionMet, val: data ? data.supervisionPct.toFixed(1)+'%' : '—' },
-            { label: 'Restricted <= 50%', met: data?.restrictedMet, val: data ? data.restrictedPct.toFixed(1)+'%' : '—' },
-          ].map((r, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: i===0 ? '1px solid var(--border)' : 'none' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: r.met===undefined ? 'var(--border2)' : r.met ? 'var(--spruce)' : 'var(--amber)', flexShrink: 0 }} />
-              <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{r.label}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: r.met ? 'var(--spruce)' : 'var(--amber)' }}>{r.val}</div>
-            </div>
-          ))}
+      {/* Task list coverage */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>Task List Coverage</p>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>{d?.taskListCoverageCount || 0} / {d?.taskListCoverage?.length || 9} areas</span>
         </div>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
-          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>Hours breakdown</div>
-          {[
-            { label: 'Unrestricted', val: data?.unrestricted ?? '—', color: 'var(--spruce)' },
-            { label: 'Restricted', val: data?.restricted ?? '—', color: 'var(--muted)' },
-            { label: 'Supervised', val: data?.supervisedHours ?? '—', color: 'var(--amber)' },
-            { label: 'Total', val: data?.totalHours ?? '—', color: 'var(--ink)', bold: true },
-          ].map((row, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '9px 0', borderBottom: i<3 ? '1px solid var(--border)' : 'none', fontSize: 13 }}>
-              <div style={{ flex: 1, fontWeight: row.bold ? 600 : 500 }}>{row.label}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: row.color, fontWeight: row.bold ? 600 : 400 }}>{row.val}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {(d?.taskListCoverage || Array(9).fill({ area: '...', covered: false })).map((t: any, i: number) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: t.covered ? 'rgba(26,122,80,0.08)' : 'var(--bg)', border: `1px solid ${t.covered ? 'rgba(26,122,80,0.2)' : 'var(--border)'}` }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.covered ? 'var(--spruce)' : 'var(--border)', flexShrink: 0 }} />
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: t.covered ? 'var(--spruce)' : 'var(--muted)' }}>{t.area}</span>
             </div>
           ))}
         </div>

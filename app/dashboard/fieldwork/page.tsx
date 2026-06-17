@@ -100,12 +100,23 @@ export default function FieldworkPage() {
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px 16px' : '28px 32px', marginBottom: 24 }}>
 
         {/* Row 1: Date + Start + End + Hours */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
-          <div><label style={lbl}>Date</label><input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} /></div>
-          <div><label style={lbl}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={inp} /></div>
-          <div><label style={lbl}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={inp} /></div>
-          <div><label style={lbl}>Hours</label><input type="number" step="0.25" min="0" placeholder="Auto or manual" value={hours} onChange={e => setHours(e.target.value)} style={inp} /></div>
-        </div>
+        {isMobile ? (
+          <>
+            <div style={{ marginBottom: 12 }}><label style={lbl}>Date</label><input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} /></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div><label style={lbl}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={inp} /></div>
+              <div><label style={lbl}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={inp} /></div>
+              <div><label style={lbl}>Hours</label><input type="number" step="0.25" min="0" placeholder="Auto" value={hours} onChange={e => setHours(e.target.value)} style={inp} /></div>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <div><label style={lbl}>Date</label><input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} /></div>
+            <div><label style={lbl}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={inp} /></div>
+            <div><label style={lbl}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={inp} /></div>
+            <div><label style={lbl}>Hours</label><input type="number" step="0.25" min="0" placeholder="Auto or manual" value={hours} onChange={e => setHours(e.target.value)} style={inp} /></div>
+          </div>
+        )}
 
         {/* Row 2: Type + Setting */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>

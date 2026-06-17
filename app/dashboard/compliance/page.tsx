@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../context/api-context';
+import SignatureCanvas from 'react-signature-canvas';
 
 export default function CompliancePage() {
   const { get } = useApi();
@@ -10,6 +11,8 @@ export default function CompliancePage() {
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [exporting, setExporting] = useState(false);
+  const [showSigModal, setShowSigModal] = useState(false);
+  const sigRef = useRef<any>(null);
 
   const month = selectedMonth;
 
@@ -18,20 +21,28 @@ export default function CompliancePage() {
     get('/compliance').then(setData).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const handleExport = async () => {
+  const handleExportClick = () => {
+    setShowSigModal(true);
+  };
+
+  const handleDownload = async () => {
+    if (!sigRef.current || sigRef.current.isEmpty()) {
+      alert('Please sign before downloading.');
+      return;
+    }
+    const sigDataUrl = sigRef.current.getTrimmedCanvas().toDataURL('image/png');
     setExporting(true);
+    setShowSigModal(false);
     try {
-      const token = await getToken({ template: undefined });
+      const token = await getToken();
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
       const base = apiUrl.replace(/\/api$/, '');
       const res = await fetch(`${base}/export?month=${selectedMonth}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signature: sigDataUrl }),
       });
-      if (!res.ok) {
-        const err = await res.text();
-        console.error('Export response:', err);
-        throw new Error('Export failed');
-      }
+      if (!res.ok) throw new Error('Export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -86,7 +97,7 @@ export default function CompliancePage() {
             style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', backgroundColor: 'var(--surface)', outline: 'none', cursor: 'pointer' }}
           />
           <button
-            onClick={handleExport}
+            onClick={handleExportClick}
             disabled={exporting}
             style={{ display: 'flex', alignItems: 'center', gap: 8, backgroundColor: exporting ? 'rgba(26,122,80,0.4)' : 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 600, cursor: exporting ? 'not-allowed' : 'pointer', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}
           >
@@ -172,6 +183,47 @@ export default function CompliancePage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Signature Modal */}
+      {showSigModal && (
+        <div onClick={() => setShowSigModal(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,32,24,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: 520, boxShadow: '0 20px 60px rgba(15,32,24,0.15)' }}>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Sign to Export</p>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>Trainee Signature</h2>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 24, lineHeight: 1.6 }}>Sign below to certify that the hours in this report are accurate to the best of your knowledge.</p>
+
+            <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', marginBottom: 8, backgroundColor: '#fafafa' }}>
+              <SignatureCanvas
+                ref={sigRef}
+                penColor='#0F2018'
+                canvasProps={{ width: 456, height: 160, style: { display: 'block' } }}
+              />
+            </div>
+
+            <button
+              onClick={() => sigRef.current?.clear()}
+              style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 24, padding: 0 }}
+            >
+              ↺ Clear signature
+            </button>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setShowSigModal(false)}
+                style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 13, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDownload}
+                style={{ flex: 2, padding: 12, borderRadius: 8, backgroundColor: 'var(--spruce)', color: '#fff', border: 'none', fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                ↓ Download PDF
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

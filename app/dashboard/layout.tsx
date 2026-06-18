@@ -109,6 +109,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               { label: 'Accrual', href: '/dashboard/compliance' },
               { label: 'Vault', href: '/dashboard/vault' },
               { label: 'Import', href: '/dashboard/import' },
+              { label: 'Billing', href: '/dashboard/billing' },
             ] : [
               { label: 'Roster', href: '/dashboard/roster' },
               { label: 'Sign forms', href: '/dashboard/forms' },

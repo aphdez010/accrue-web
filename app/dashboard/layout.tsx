@@ -42,6 +42,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
     fetchHours();
   }, []);
+  useEffect(() => {
+    if (pathname.startsWith('/dashboard/billing')) return; // never gate the billing page itself
+    const checkSubscription = async () => {
+      try {
+        const token = await getToken();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
+        const res = await fetch(`${apiUrl}/billing/status`, { headers: { Authorization: `Bearer ${token}` } });
+        if (res.status === 404) return; // no professional record yet — onboarding flow handles this
+        const data = await res.json();
+        if (data.subscription_status !== 'active') {
+          router.push('/dashboard/billing');
+        }
+      } catch {}
+    };
+    checkSubscription();
+  }, [pathname]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);

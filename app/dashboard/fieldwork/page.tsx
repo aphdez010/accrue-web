@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../../context/api-context';
 
-const TYPES = ['Unrestricted Hours','Restricted Hours','Supervision – Individual','Supervision – Group','Experience – Other'];
+const TYPES = ['Unrestricted Hours','Restricted Hours','Supervision — Individual','Supervision — Group','Experience — Other'];
 const SETTINGS = ['Home','Center','School','Community','Telehealth','Other'];
 const SUP_FORMATS = ['In person','Virtual','N/A'];
 const TASK_AREAS = [
@@ -88,16 +88,16 @@ export default function FieldworkPage() {
       setSupervised(false); setMonthlyObs(false);
       setOk(true); setTimeout(() => setOk(false), 3000);
       load();
-    } catch(e: any) { setErr(e.message || 'Error'); }
+    } catch (e: any) { setErr(e.message || 'Error'); }
     finally { setBusy(false); }
   }
 
   return (
-    <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 900 }}>
+    <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 900, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Fieldwork</p>
       <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 32px' }}>Log Entry</h1>
 
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px 16px' : '28px 32px', marginBottom: 24 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px 16px' : '28px 32px', marginBottom: 24, minWidth: 0 }}>
 
         {/* Row 1: Date + Start + End + Hours */}
         {isMobile ? (
@@ -107,11 +107,11 @@ export default function FieldworkPage() {
               <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...inp, width: '100%', boxSizing: 'border-box' }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label style={lbl}>Start Time</label>
                 <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={{ ...inp, width: '100%', boxSizing: 'border-box' }} />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label style={lbl}>End Time</label>
                 <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={{ ...inp, width: '100%', boxSizing: 'border-box' }} />
               </div>
@@ -122,23 +122,23 @@ export default function FieldworkPage() {
             </div>
           </>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
-            <div><label style={lbl}>Date</label><input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} /></div>
-            <div><label style={lbl}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={inp} /></div>
-            <div><label style={lbl}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={inp} /></div>
-            <div><label style={lbl}>Hours</label><input type="number" step="0.25" min="0" placeholder="Auto or manual" value={hours} onChange={e => setHours(e.target.value)} style={inp} /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div style={{ minWidth: 0 }}><label style={lbl}>Date</label><input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} /></div>
+            <div style={{ minWidth: 0 }}><label style={lbl}>Start Time</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={inp} /></div>
+            <div style={{ minWidth: 0 }}><label style={lbl}>End Time</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={inp} /></div>
+            <div style={{ minWidth: 0 }}><label style={lbl}>Hours</label><input type="number" step="0.25" min="0" placeholder="Auto or manual" value={hours} onChange={e => setHours(e.target.value)} style={inp} /></div>
           </div>
         )}
 
         {/* Row 2: Type + Setting */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-          <div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
+          <div style={{ minWidth: 0 }}>
             <label style={lbl}>Experience Type</label>
             <select value={type} onChange={e => setType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
               {TYPES.map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <label style={lbl}>Setting</label>
             <select value={setting} onChange={e => setSetting(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
               {SETTINGS.map(s => <option key={s}>{s}</option>)}
@@ -154,14 +154,14 @@ export default function FieldworkPage() {
 
         {/* Row 4: Task List Area */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '2fr 1fr', gap: 12, marginBottom: 16 }}>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <label style={lbl}>Task List Area</label>
             <select value={taskArea} onChange={e => setTaskArea(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
               <option value="">Select area...</option>
               {TASK_AREAS.map(a => <option key={a}>{a}</option>)}
             </select>
           </div>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <label style={lbl}>Task List Item #</label>
             <input type="number" min="1" placeholder="e.g. 4" value={taskAreaNum} onChange={e => setTaskAreaNum(e.target.value)} style={inp} />
           </div>
@@ -178,7 +178,7 @@ export default function FieldworkPage() {
             </label>
           </div>
           {supervised && (
-            <div>
+            <div style={{ minWidth: 0 }}>
               <label style={lbl}>Supervision Format</label>
               <select value={supFormat} onChange={e => setSupFormat(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
                 {SUP_FORMATS.map(f => <option key={f}>{f}</option>)}
@@ -210,7 +210,7 @@ export default function FieldworkPage() {
           <input type="text" placeholder="Any additional notes" value={notes} onChange={e => setNotes(e.target.value)} style={inp} />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           <button onClick={submit} disabled={busy || !hours || !date} style={{ background: busy ? 'var(--muted)' : 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '11px 28px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '.06em', cursor: busy ? 'not-allowed' : 'pointer' }}>
             {busy ? 'Logging...' : 'Log Entry'}
           </button>
@@ -220,23 +220,24 @@ export default function FieldworkPage() {
       </div>
 
       {/* Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Total Hours</p>
           <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1 }}>{total.toFixed(1)}</p>
         </div>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Entries</p>
           <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1 }}>{entries.length}</p>
         </div>
       </div>
 
       {/* Entries table */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '28px 32px' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '28px 32px', minWidth: 0 }}>
         <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>{month} — Entries</p>
         {entries.length === 0 ? (
           <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', padding: '16px 0' }}>No entries yet.</p>
         ) : (
+          <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? 11 : 13 }}>
             <thead>
               <tr>{['Date','Description','Setting','Hours','Supv','Task Area','Obs'].map(h => (
@@ -259,6 +260,7 @@ export default function FieldworkPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

@@ -63,8 +63,8 @@ export default function LandingPage() {
           <nav style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 14 : 28, flexWrap: 'wrap' }}>
             <a href="#features" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Features</a>
             <a href="#pricing" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Pricing</a>
-            <a href="/sign-in" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Sign in</a>
-            <a href="/sign-up" style={{ background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontSize: 14, fontWeight: 600, padding: '10px 18px', borderRadius: 10 }}>Get started</a>
+            <a href="/sign-in?redirect_url=/dashboard" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Sign in</a>
+            <a href="/sign-up?redirect_url=/dashboard" style={{ background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontSize: 14, fontWeight: 600, padding: '10px 18px', borderRadius: 10 }}>Get started</a>
           </nav>
         </div>
       </header>
@@ -89,7 +89,7 @@ export default function LandingPage() {
               : "Track every supervisee's hours, catch a ratio violation before it becomes an audit problem, and sign forms without a printer."}
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <a href="/sign-up" style={{ background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontSize: 15, fontWeight: 600, padding: '14px 26px', borderRadius: 10 }}>Start tracking free</a>
+            <a href="/sign-up?redirect_url=/dashboard" style={{ background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontSize: 15, fontWeight: 600, padding: '14px 26px', borderRadius: 10 }}>Start tracking free</a>
             <a href="#pricing" style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 600, padding: '14px 26px', borderRadius: 10, border: '1px solid var(--border)' }}>See pricing</a>
           </div>
         </div>
@@ -164,14 +164,14 @@ export default function LandingPage() {
               </li>
             ))}
           </ul>
-          <a href="/sign-up" style={{ display: 'inline-block', background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: 15, padding: '14px 32px', borderRadius: 10 }}>Get started</a>
+          <a href="/sign-up?redirect_url=/dashboard" style={{ display: 'inline-block', background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: 15, padding: '14px 32px', borderRadius: 10 }}>Get started</a>
         </div>
       </section>
 
       <section style={{ background: 'var(--ink)', padding: isMobile ? '48px 20px' : '64px 24px', textAlign: 'center' }}>
         <h2 style={{ fontFamily: 'var(--display)', color: '#fff', fontSize: isMobile ? 24 : 30, fontWeight: 800, margin: '0 0 14px' }}>Your hours are already accruing.</h2>
         <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 16, margin: '0 0 28px' }}>Start tracking them correctly today.</p>
-        <a href="/sign-up" style={{ background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: 15, padding: '14px 30px', borderRadius: 10 }}>Start tracking free</a>
+        <a href="/sign-up?redirect_url=/dashboard" style={{ background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: 15, padding: '14px 30px', borderRadius: 10 }}>Start tracking free</a>
       </section>
 
       <footer style={{ borderTop: '1px solid var(--border)', padding: '28px 24px', textAlign: 'center' }}>

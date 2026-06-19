@@ -1,5 +1,27 @@
 import { ClerkProvider } from '@clerk/nextjs';
+import { Syne, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+
+const syne = Syne({
+  subsets: ['latin'],
+  weight: ['600', '700', '800'],
+  variable: '--display',
+  display: 'swap',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--sans',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--mono',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'Supervisd',
@@ -9,11 +31,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <head>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-        </head>
+      <html lang="en" className={`${syne.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
         <body>{children}</body>
       </html>
     </ClerkProvider>

@@ -108,7 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <ApiProvider>
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr 360px', gridTemplateRows: isMobile ? 'auto 1fr' : '1fr', height: '100vh', background: 'var(--bg)', fontFamily: 'var(--sans)' }}>
       {isMobile && (
-        <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50 }}>
+        <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50, minWidth: 0 }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
             <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2 }}>
@@ -234,7 +234,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {isMobile && (
           <button onClick={() => setMobileAgentOpen(true)} style={{ position: 'fixed', bottom: 24, right: 20, zIndex: 90, background: 'var(--spruce)', color: '#fff', border: 'none', borderRadius: '50%', width: 52, height: 52, fontSize: 20, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✦</button>
         )}
-        <main style={{ overflowY: 'auto', background: 'var(--bg)' }}>
+        <main style={{ overflowY: 'auto', overflowX: 'hidden', minWidth: 0, background: 'var(--bg)' }}>
           {children}
         </main>
 

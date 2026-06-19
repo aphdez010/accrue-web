@@ -1,4 +1,3 @@
-cat > app/page.tsx << 'EOF'
 import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
 import LandingPage from '../components/LandingPage';
@@ -8,4 +7,3 @@ export default async function Home() {
   if (userId) redirect('/dashboard');
   return <LandingPage />;
 }
-EOF

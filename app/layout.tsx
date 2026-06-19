@@ -1,8 +1,8 @@
 import { ClerkProvider } from '@clerk/nextjs';
-import { Syne, Inter, JetBrains_Mono } from 'next/font/google';
+import { Manrope, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
-const syne = Syne({
+const manrope = Manrope({
   subsets: ['latin'],
   weight: ['600', '700', '800'],
   variable: '--display',
@@ -31,7 +31,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${syne.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
+      <html lang="en" className={`${manrope.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
         <body>{children}</body>
       </html>
     </ClerkProvider>

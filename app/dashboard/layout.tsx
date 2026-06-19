@@ -43,13 +43,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchHours();
   }, []);
   useEffect(() => {
-    if (pathname.startsWith('/dashboard/billing')) return; // never gate the billing page itself
+    if (pathname.startsWith('/dashboard/billing')) return;
     const checkSubscription = async () => {
       try {
         const token = await getToken();
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
         const res = await fetch(`${apiUrl}/billing/status`, { headers: { Authorization: `Bearer ${token}` } });
-        if (res.status === 404) return; // no professional record yet — onboarding flow handles this
+        if (res.status === 404) return;
         const data = await res.json();
         if (data.subscription_status !== 'active') {
           router.push('/dashboard/billing');
@@ -148,7 +148,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       )}
 
-        {/* SIDEBAR */}
         {!isMobile && <aside style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
@@ -205,7 +204,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button onClick={() => signOut()} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 10, padding: '4px 8px', borderRadius: 6, flexShrink: 0 }}>↪ out</button>
         </aside>}
 
-        {/* MOBILE AGENT OVERLAY */}
         {isMobile && mobileAgentOpen && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--surface)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -236,12 +234,59 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {isMobile && (
           <button onClick={() => setMobileAgentOpen(true)} style={{ position: 'fixed', bottom: 24, right: 20, zIndex: 90, background: 'var(--spruce)', color: '#fff', border: 'none', borderRadius: '50%', width: 52, height: 52, fontSize: 20, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✦</button>
         )}
-        {/* MAIN */}
         <main style={{ overflowY: 'auto', background: 'var(--bg)' }}>
           {children}
         </main>
 
-        {/* AGENT PANEL */}
         {!isMobile && <aside style={{ background: 'var(--surface)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '20px 20px 14px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 700, marginBottom: 2 }}>Ask Supervisd
+            <div style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 700, marginBottom: 2 }}>Ask Supervisd ✦</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '.08em', textTransform: 'uppercase' }}>Answers from the BACB handbook</div>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {messages.length === 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>Quick questions</div>
+                {quickQuestions.map(q => (
+                  <button key={q} onClick={() => handleSend(q)} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', font: '500 12px var(--sans)', padding: '10px 12px', borderRadius: 10, textAlign: 'left', cursor: 'pointer', lineHeight: 1.4 }}>{q}</button>
+                ))}
+              </div>
+            )}
+
+            {messages.map((m, i) => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{m.role === 'user' ? 'You' : 'Supervisd'}</div>
+                <div style={{ background: m.role === 'user' ? 'var(--spruce)' : 'var(--surface2)', color: m.role === 'user' ? '#fff' : 'var(--ink)', padding: '10px 14px', borderRadius: 12, fontSize: 13, lineHeight: 1.5, maxWidth: '90%', fontFamily: 'var(--sans)' }}><ReactMarkdown>{m.content}</ReactMarkdown></div>
+              </div>
+            ))}
+
+            {loading && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Supervisd</div>
+                <div style={{ background: 'var(--surface2)', padding: '10px 14px', borderRadius: 12, fontSize: 13, color: 'var(--muted)' }}>Thinking...</div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
+            <textarea
+              placeholder="Ask a compliance question..."
+              rows={1}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              style={{ flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--ink)', font: '400 13px var(--sans)', padding: '10px 14px', borderRadius: 10, outline: 'none', resize: 'none' }}
+            />
+            <button
+              onClick={() => handleSend()}
+              disabled={loading}
+              style={{ background: 'var(--spruce)', border: 0, color: '#fff', font: '600 13px var(--sans)', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', alignSelf: 'flex-end', opacity: loading ? 0.6 : 1 }}>Send</button>
+          </div>
+        </aside>}
+
+      </div>
+    </ApiProvider>
+  );
+}

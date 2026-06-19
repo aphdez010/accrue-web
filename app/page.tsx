@@ -1,8 +1,11 @@
+cat > app/page.tsx << 'EOF'
 import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
+import LandingPage from '../components/LandingPage';
 
 export default async function Home() {
   const { userId } = await auth();
   if (userId) redirect('/dashboard');
-  else redirect('/sign-in');
+  return <LandingPage />;
 }
+EOF

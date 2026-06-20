@@ -24,7 +24,7 @@ function calcHours(start: string, end: string) {
 }
 
 export default function FieldworkPage() {
-  const { get, post } = useApi();
+  const { get, post, patch } = useApi();
   const [entries, setEntries] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -53,6 +53,35 @@ export default function FieldworkPage() {
   const [taskAreaNum, setTaskAreaNum] = useState('');
   const [monthlyObs, setMonthlyObs] = useState(false);
   const [notes, setNotes] = useState('');
+  const [editingId, setEditingId] = useState<string | number | null>(null);
+
+  function startEdit(e: any) {
+    setEditingId(e.id);
+    setDate(String(e.entry_date || '').slice(0, 10));
+    setStartTime(e.start_time || '');
+    setEndTime(e.end_time || '');
+    setHours(e.hours != null ? String(e.hours) : '');
+    setType(e.experience_type || 'Unrestricted Hours');
+    setSupervised(!!e.supervised);
+    setSupFormat(e.supervision_format || 'In person');
+    setSetting(e.setting || 'Center');
+    setActivityDesc(e.activity_description || '');
+    setTaskArea(e.task_list_area || '');
+    setTaskAreaNum(e.task_list_area_number != null ? String(e.task_list_area_number) : '');
+    setMonthlyObs(!!e.monthly_observation);
+    setNotes(e.notes || '');
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setDate(new Date().toISOString().slice(0, 10));
+    setType('Unrestricted Hours');
+    setSupFormat('In person');
+    setSetting('Center');
+    setHours(''); setStartTime(''); setEndTime(''); setNotes('');
+    setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
+    setSupervised(false); setMonthlyObs(false);
+  }
 
   useEffect(() => {
     if (startTime && endTime) {
@@ -73,7 +102,7 @@ export default function FieldworkPage() {
     if (!date || !hours) return;
     setBusy(true); setErr('');
     try {
-      await post('/fieldwork', {
+      const body = {
         entry_date: date, hours: parseFloat(hours), experience_type: type,
         supervised, notes: notes || null,
         activity_description: activityDesc || null,
@@ -82,7 +111,13 @@ export default function FieldworkPage() {
         task_list_area: taskArea || null,
         task_list_area_number: taskAreaNum ? parseInt(taskAreaNum) : null,
         monthly_observation: monthlyObs,
-      });
+      };
+      if (editingId) {
+        await patch('/fieldwork/' + editingId, body);
+      } else {
+        await post('/fieldwork', body);
+      }
+      setEditingId(null);
       setHours(''); setStartTime(''); setEndTime(''); setNotes('');
       setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
       setSupervised(false); setMonthlyObs(false);
@@ -212,8 +247,13 @@ export default function FieldworkPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           <button onClick={submit} disabled={busy || !hours || !date} style={{ background: busy ? 'var(--muted)' : 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '11px 28px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '.06em', cursor: busy ? 'not-allowed' : 'pointer' }}>
-            {busy ? 'Logging...' : 'Log Entry'}
+            {busy ? (editingId ? 'Updating...' : 'Logging...') : (editingId ? 'Update Entry' : 'Log Entry')}
           </button>
+          {editingId && (
+            <button onClick={cancelEdit} style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 8, padding: '11px 20px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '.06em', cursor: 'pointer' }}>
+              Cancel
+            </button>
+          )}
           {ok && <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--spruce)' }}>✓ Entry logged</span>}
           {err && <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--amber)' }}>{err}</span>}
         </div>
@@ -240,7 +280,7 @@ export default function FieldworkPage() {
           <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? 11 : 13 }}>
             <thead>
-              <tr>{['Date','Description','Setting','Hours','Supv','Task Area','Obs'].map(h => (
+              <tr>{['Date','Description','Setting','Hours','Supv','Task Area','Obs',''].map(h => (
                 <th key={h} style={{ textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
               ))}</tr>
             </thead>
@@ -256,6 +296,11 @@ export default function FieldworkPage() {
                   </td>
                   <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.task_list_area ? `${e.task_list_area}${e.task_list_area_number ? ' #'+e.task_list_area_number : ''}` : '—'}</td>
                   <td style={{ padding: '12px 0', fontFamily: 'var(--mono)', fontSize: 11 }}>{e.monthly_observation ? <span style={{ color: 'var(--spruce)' }}>✓</span> : '—'}</td>
+                  <td style={{ padding: '12px 0 12px 16px' }}>
+                    <button onClick={() => startEdit(e)} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', cursor: 'pointer' }}>
+                      Edit
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

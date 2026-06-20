@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 export default function LandingPage() {
   const [role, setRole] = useState<'trainee' | 'bcba'>('trainee');
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -63,14 +64,35 @@ export default function LandingPage() {
             <div style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 800, letterSpacing: '-.02em' }}>Supervisd</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em', marginTop: 2 }}>Hours you can trust</div>
           </div>
-          <nav style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 14 : 28, flexWrap: 'wrap' }}>
-            <a href="#walkthrough" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>How it works</a>
-            <a href="#features" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Features</a>
-            <a href="#pricing" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Pricing</a>
-            <a href="/sign-in?redirect_url=/dashboard" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Sign in</a>
-            <a href="/sign-up?redirect_url=/dashboard" style={{ background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontSize: 14, fontWeight: 600, padding: '10px 18px', borderRadius: 10 }}>Get started</a>
-          </nav>
+          {isMobile ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <a href="/sign-up?redirect_url=/dashboard" style={{ background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 600, padding: '8px 14px', borderRadius: 10 }}>Get started</a>
+              <button onClick={() => setMobileMenuOpen(o => !o)} aria-label="Toggle menu" style={{ border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+                <div style={{ width: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ height: 2, background: 'var(--ink)', borderRadius: 1, transform: mobileMenuOpen ? 'translateY(6px) rotate(45deg)' : 'none', transition: 'transform .15s' }} />
+                  <div style={{ height: 2, background: 'var(--ink)', borderRadius: 1, opacity: mobileMenuOpen ? 0 : 1, transition: 'opacity .15s' }} />
+                  <div style={{ height: 2, background: 'var(--ink)', borderRadius: 1, transform: mobileMenuOpen ? 'translateY(-6px) rotate(-45deg)' : 'none', transition: 'transform .15s' }} />
+                </div>
+              </button>
+            </div>
+          ) : (
+            <nav style={{ display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
+              <a href="#walkthrough" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>How it works</a>
+              <a href="#features" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Features</a>
+              <a href="#pricing" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Pricing</a>
+              <a href="/sign-in?redirect_url=/dashboard" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Sign in</a>
+              <a href="/sign-up?redirect_url=/dashboard" style={{ background: 'var(--spruce)', color: '#fff', textDecoration: 'none', fontSize: 14, fontWeight: 600, padding: '10px 18px', borderRadius: 10 }}>Get started</a>
+            </nav>
+          )}
         </div>
+        {isMobile && mobileMenuOpen && (
+          <div style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <a href="#walkthrough" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>How it works</a>
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Features</a>
+            <a href="#pricing" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Pricing</a>
+            <a href="/sign-in?redirect_url=/dashboard" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Sign in</a>
+          </div>
+        )}
       </header>
 
       <section style={{ background: 'radial-gradient(circle at 20% 0%, var(--spruce) 0%, #156944 55%, #0F4A30 100%)' }}>

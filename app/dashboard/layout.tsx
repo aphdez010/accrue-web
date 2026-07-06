@@ -10,7 +10,7 @@ type Message = { role: 'user' | 'assistant'; content: string };
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const bcbaRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus'];
+  const bcbaRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus', '/dashboard/bcaba'];
   const [role, setRole] = useState<'trainee' | 'bcba'>(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
   useEffect(() => {
     setRole(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
@@ -139,6 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               { label: 'Sign forms', href: '/dashboard/forms' },
               { label: 'Records', href: '/dashboard/records' },
               { label: 'My CEUs', href: '/dashboard/ceus' },
+              { label: 'BCaBA', href: '/dashboard/bcaba' },
             ]).map(item => (
               <a key={item.label} href={item.href} style={{ display: 'inline-block', padding: '6px 14px', borderRadius: 20, background: pathname === item.href ? 'var(--spruce)' : 'var(--bg)', border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 11, color: pathname === item.href ? '#fff' : 'var(--ink)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {item.label}
@@ -174,6 +175,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               { label: 'Sign forms', icon: '✦', href: '/dashboard/forms' },
               { label: 'Records', icon: '▣', href: '/dashboard/records' },
               { label: 'My CEUs', icon: '↗', href: '/dashboard/ceus' },
+              { label: 'BCaBA', icon: '▤', href: '/dashboard/bcaba' },
             ]).map(item => (
               <a key={item.label} href={item.href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'var(--muted)', fontWeight: 500, marginBottom: 2, textDecoration: 'none', fontSize: 13.5, transition: 'all .15s' }}>
                 <span style={{ width: 18, textAlign: 'center', fontSize: 15 }}>{item.icon}</span>

@@ -10,7 +10,7 @@ type Message = { role: 'user' | 'assistant'; content: string };
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const bcbaRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus', '/dashboard/bcaba'];
+  const bcbaRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus', '/dashboard/bcaba', '/dashboard/bcaba/invoices', '/dashboard/bcaba/monthly-verification'];
   const [role, setRole] = useState<'trainee' | 'bcba'>(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
   useEffect(() => {
     setRole(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
@@ -133,6 +133,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               { label: 'Accrual', href: '/dashboard/compliance' },
               { label: 'Vault', href: '/dashboard/vault' },
               { label: 'Import', href: '/dashboard/import' },
+              { label: 'M-FVF', href: '/dashboard/monthly-verification' },
               { label: 'Billing', href: '/dashboard/billing' },
             ] : [
               { label: 'Roster', href: '/dashboard/roster' },
@@ -140,6 +141,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               { label: 'Records', href: '/dashboard/records' },
               { label: 'My CEUs', href: '/dashboard/ceus' },
               { label: 'BCaBA', href: '/dashboard/bcaba' },
+              { label: 'Invoices', href: '/dashboard/bcaba/invoices' },
+              { label: 'M-FVF', href: '/dashboard/bcaba/monthly-verification' },
             ]).map(item => (
               <a key={item.label} href={item.href} style={{ display: 'inline-block', padding: '6px 14px', borderRadius: 20, background: pathname === item.href ? 'var(--spruce)' : 'var(--bg)', border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 11, color: pathname === item.href ? '#fff' : 'var(--ink)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {item.label}
@@ -170,12 +173,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               { label: 'Accrual record', icon: '↗', href: '/dashboard/compliance' },
               { label: 'Vault', icon: '▣', href: '/dashboard/vault' },
               { label: 'Import history', icon: '⬆', href: '/dashboard/import' },
+              { label: 'M-FVF', icon: '✓', href: '/dashboard/monthly-verification' },
             ] : [
               { label: 'Roster', icon: '◉', href: '/dashboard/roster' },
               { label: 'Sign forms', icon: '✦', href: '/dashboard/forms' },
               { label: 'Records', icon: '▣', href: '/dashboard/records' },
               { label: 'My CEUs', icon: '↗', href: '/dashboard/ceus' },
               { label: 'BCaBA', icon: '▤', href: '/dashboard/bcaba' },
+              { label: 'Invoices', icon: '$', href: '/dashboard/bcaba/invoices' },
+              { label: 'M-FVF', icon: '✓', href: '/dashboard/bcaba/monthly-verification' },
             ]).map(item => (
               <a key={item.label} href={item.href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'var(--muted)', fontWeight: 500, marginBottom: 2, textDecoration: 'none', fontSize: 13.5, transition: 'all .15s' }}>
                 <span style={{ width: 18, textAlign: 'center', fontSize: 15 }}>{item.icon}</span>

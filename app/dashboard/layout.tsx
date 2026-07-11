@@ -10,7 +10,7 @@ type Message = { role: 'user' | 'assistant'; content: string };
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const bcbaRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus', '/dashboard/bcaba', '/dashboard/bcaba/invoices', '/dashboard/bcaba/monthly-verification', '/dashboard/bcaba/final-verification'];
+  const bcbaRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus', '/dashboard/bcaba', '/dashboard/bcaba/trainees', '/dashboard/bcaba/invoices', '/dashboard/bcaba/monthly-verification', '/dashboard/bcaba/final-verification'];
   const [role, setRole] = useState<'trainee' | 'bcba'>(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
   useEffect(() => {
     setRole(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
@@ -167,6 +167,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               { label: 'Records', href: '/dashboard/records' },
               { label: 'My CEUs', href: '/dashboard/ceus' },
               { label: 'BCaBA', href: '/dashboard/bcaba' },
+              { label: 'My Trainees', href: '/dashboard/bcaba/trainees' },
               { label: 'Invoices', href: '/dashboard/bcaba/invoices' },
               { label: 'M-FVF', href: '/dashboard/bcaba/monthly-verification' },
               { label: 'F-FVF', href: '/dashboard/bcaba/final-verification' },
@@ -208,6 +209,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               { label: 'Records', icon: '▣', href: '/dashboard/records' },
               { label: 'My CEUs', icon: '↗', href: '/dashboard/ceus' },
               { label: 'BCaBA', icon: '▤', href: '/dashboard/bcaba' },
+              { label: 'My Trainees', icon: '◈', href: '/dashboard/bcaba/trainees' },
               { label: 'Invoices', icon: '$', href: '/dashboard/bcaba/invoices' },
               { label: 'M-FVF', icon: '✓', href: '/dashboard/bcaba/monthly-verification' },
               { label: 'F-FVF', icon: '◆', href: '/dashboard/bcaba/final-verification' },

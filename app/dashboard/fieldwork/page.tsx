@@ -2,9 +2,11 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../../context/api-context';
 
-const TYPES = ['Unrestricted Hours','Restricted Hours','Supervision — Individual','Supervision — Group','Experience — Other'];
+const TYPES = ['Unrestricted Hours','Restricted Hours','Experience — Other'];
 const SETTINGS = ['Home','Center','School','Community','Telehealth','Other'];
-const SUP_FORMATS = ['In person','Virtual','N/A'];
+const SUP_FORMATS = ['In person','Virtual','With Client','N/A'];
+const SYNC_TYPES = ['Asynchronous','Synchronized'];
+const GROUP_TYPES = ['Individual','Group'];
 const TASK_AREAS = [
   'A. Measurement','B. Skill Acquisition','C. Behavior Reduction',
   'D. Documentation & Reporting','E. Professional Conduct',
@@ -44,9 +46,12 @@ export default function FieldworkPage() {
   const [endTime, setEndTime] = useState('');
   const [hours, setHours] = useState('');
   const [type, setType] = useState('Unrestricted Hours');
+  const [entrySyncType, setEntrySyncType] = useState('Synchronized');
   const [supervised, setSupervised] = useState(false);
   const [supervisorName, setSupervisorName] = useState('');
   const [supFormat, setSupFormat] = useState('In person');
+  const [supervisionGroupType, setSupervisionGroupType] = useState('Individual');
+  const [supervisorPresent, setSupervisorPresent] = useState(false);
   const [setting, setSetting] = useState('Center');
   const [activityDesc, setActivityDesc] = useState('');
   const [taskArea, setTaskArea] = useState('');
@@ -62,8 +67,11 @@ export default function FieldworkPage() {
     setEndTime(e.end_time || '');
     setHours(e.hours != null ? String(e.hours) : '');
     setType(e.experience_type || 'Unrestricted Hours');
+    setEntrySyncType(e.entry_sync_type || 'Synchronized');
     setSupervised(!!e.supervised);
     setSupFormat(e.supervision_format || 'In person');
+    setSupervisionGroupType(e.supervision_group_type || 'Individual');
+    setSupervisorPresent(!!e.supervisor_present);
     setSetting(e.setting || 'Center');
     setActivityDesc(e.activity_description || '');
     setTaskArea(e.task_list_area || '');
@@ -76,7 +84,10 @@ export default function FieldworkPage() {
     setEditingId(null);
     setDate(new Date().toISOString().slice(0, 10));
     setType('Unrestricted Hours');
+    setEntrySyncType('Synchronized');
     setSupFormat('In person');
+    setSupervisionGroupType('Individual');
+    setSupervisorPresent(false);
     setSetting('Center');
     setHours(''); setStartTime(''); setEndTime(''); setNotes('');
     setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
@@ -111,6 +122,9 @@ export default function FieldworkPage() {
         task_list_area: taskArea || null,
         task_list_area_number: taskAreaNum ? parseInt(taskAreaNum) : null,
         monthly_observation: monthlyObs,
+        entry_sync_type: entrySyncType,
+        supervisor_present: supervisorPresent,
+        supervision_group_type: supervised ? supervisionGroupType : null,
       };
       if (editingId) {
         await patch('/fieldwork/' + editingId, body);
@@ -165,12 +179,18 @@ export default function FieldworkPage() {
           </div>
         )}
 
-        {/* Row 2: Type + Setting */}
+        {/* Row 2: Type + Entry Sync Type + Setting */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
           <div style={{ minWidth: 0 }}>
             <label style={lbl}>Experience Type</label>
             <select value={type} onChange={e => setType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
               {TYPES.map(t => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <label style={lbl}>Entry Type</label>
+            <select value={entrySyncType} onChange={e => setEntrySyncType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+              {SYNC_TYPES.map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div style={{ minWidth: 0 }}>
@@ -202,8 +222,8 @@ export default function FieldworkPage() {
           </div>
         </div>
 
-        {/* Row 5: Supervised toggle + format */}
-        <div style={{ display: 'grid', gridTemplateColumns: supervised ? '1fr 1fr' : '1fr', gap: 16, marginBottom: 20 }}>
+        {/* Row 5: Supervised toggle + format + group type */}
+        <div style={{ display: 'grid', gridTemplateColumns: supervised ? 'repeat(auto-fit, minmax(160px, 1fr))' : '1fr', gap: 16, marginBottom: 20 }}>
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
               <div onClick={() => setSupervised(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (supervised ? 'var(--spruce)' : 'var(--border)'), background: supervised ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
@@ -220,6 +240,14 @@ export default function FieldworkPage() {
               </select>
             </div>
           )}
+          {supervised && (
+            <div style={{ minWidth: 0 }}>
+              <label style={lbl}>Supervision Type</label>
+              <select value={supervisionGroupType} onChange={e => setSupervisionGroupType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                {GROUP_TYPES.map(g => <option key={g}>{g}</option>)}
+              </select>
+            </div>
+          )}
         </div>
 
         {supervised && (
@@ -228,6 +256,16 @@ export default function FieldworkPage() {
             <input type="text" placeholder="e.g. Dr. Smith" value={supervisorName} onChange={e => setSupervisorName(e.target.value)} style={inp} />
           </div>
         )}
+
+        {/* Supervisor Present */}
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <div onClick={() => setSupervisorPresent(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (supervisorPresent ? 'var(--spruce)' : 'var(--border)'), background: supervisorPresent ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+              {supervisorPresent && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            </div>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Supervisor present</span>
+          </label>
+        </div>
 
         {/* Monthly observation */}
         <div style={{ marginBottom: 20 }}>

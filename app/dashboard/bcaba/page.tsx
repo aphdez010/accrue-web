@@ -5,6 +5,7 @@ import { useApi } from '../../context/api-context';
 const ENTRY_TYPES = ['supervised', 'observation'];
 const SUP_FORMATS = ['individual', 'group'];
 const RESTRICTION_TYPES = ['unrestricted', 'restricted'];
+const SYNC_TYPES = ['asynchronous', 'synchronized'];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const inp = { width: '100%', maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const, WebkitAppearance: 'none' as const };
@@ -45,6 +46,8 @@ export default function BcabaPage() {
   const [supFormat, setSupFormat] = useState('individual');
   const [restrictionType, setRestrictionType] = useState('unrestricted');
   const [clientPresent, setClientPresent] = useState(false);
+  const [entrySyncType, setEntrySyncType] = useState('synchronized');
+  const [supervisorPresent, setSupervisorPresent] = useState(false);
   const [notes, setNotes] = useState('');
 
   const load = () => get('/bcaba/trainees/' + TRAINEE_ID + '/monthly/' + monthYear).then((r: any) => {
@@ -70,8 +73,10 @@ export default function BcabaPage() {
         notes: notes || null,
         restrictionType,
         clientPresent,
+        entrySyncType,
+        supervisorPresent,
       });
-      setHours(''); setNotes(''); setClientPresent(false);
+      setHours(''); setNotes(''); setClientPresent(false); setSupervisorPresent(false);
       setOk(true); setTimeout(() => setOk(false), 3000);
       load();
     } catch (e: any) { setErr(e.message || 'Error'); }
@@ -109,7 +114,7 @@ export default function BcabaPage() {
   }, [viewYear, viewMonth]);
 
   function goPrevMonth() {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
     else setViewMonth(m => m - 1);
   }
   function goNextMonth() {
@@ -150,7 +155,7 @@ export default function BcabaPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? 4 : 6, marginBottom: 8 }}>
           {WEEKDAYS.map(w => (
-            <div key={w} style={{ textAlign: 'center' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, color: 'var(--muted)', padding: '4px 0' }}>{isMobile ? w.slice(0, 1) : w}</div>
+            <div key={w} style={{ textAlign: 'center' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', padding: '4px 0' }}>{isMobile ? w.slice(0, 1) : w}</div>
           ))}
         </div>
 
@@ -173,7 +178,7 @@ export default function BcabaPage() {
                   background: dayData ? 'rgba(26,122,80,0.06)' : 'var(--bg)',
                   cursor: 'pointer',
                   display: 'flex',
-                  flexDirection: 'column' as const,
+                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   padding: 4,
@@ -218,15 +223,15 @@ export default function BcabaPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, color: 'var(--muted)', marginBottom: 4 }}>Total Hours</p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Total Hours</p>
           <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1 }}>{summary ? Number(summary.totalHours).toFixed(1) : '0.0'}</p>
         </div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, color: 'var(--muted)', marginBottom: 4 }}>Unrestricted %</p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Unrestricted %</p>
           <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: unrestrictedPct >= 40 ? 'var(--spruce)' : 'var(--amber)', margin: 0, lineHeight: 1 }}>{unrestrictedPct}%</p>
         </div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, color: 'var(--muted)', marginBottom: 4 }}>Individual / Group</p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Individual / Group</p>
           <p style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1.3 }}>
             {summary ? Number(summary.individualHours).toFixed(1) : '0.0'} / {summary ? Number(summary.groupHours).toFixed(1) : '0.0'}
           </p>
@@ -242,7 +247,7 @@ export default function BcabaPage() {
       )}
 
       <div id="bcaba-log-form" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px 16px' : '28px 32px', marginBottom: 24, minWidth: 0 }}>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>Log Entry — {date}</p>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>Log Entry — {date}</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <div style={{ minWidth: 0 }}>
@@ -255,7 +260,7 @@ export default function BcabaPage() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
           <div style={{ minWidth: 0 }}>
             <label style={lbl}>Entry Type</label>
             <select value={entryType} onChange={e => setEntryType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
@@ -266,6 +271,12 @@ export default function BcabaPage() {
             <label style={lbl}>Supervision Format</label>
             <select value={supFormat} onChange={e => setSupFormat(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
               {SUP_FORMATS.map(f => <option key={f} value={f}>{f === 'individual' ? 'Individual' : 'Group'}</option>)}
+            </select>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <label style={lbl}>Entry Sync Type</label>
+            <select value={entrySyncType} onChange={e => setEntrySyncType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+              {SYNC_TYPES.map(s => <option key={s} value={s}>{s === 'asynchronous' ? 'Asynchronous' : 'Synchronized'}</option>)}
             </select>
           </div>
         </div>
@@ -287,6 +298,15 @@ export default function BcabaPage() {
           </label>
         </div>
 
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <div onClick={() => setSupervisorPresent(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (supervisorPresent ? 'var(--spruce)' : 'var(--border)'), background: supervisorPresent ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+              {supervisorPresent && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            </div>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Supervisor present</span>
+          </label>
+        </div>
+
         <div style={{ marginBottom: 24 }}>
           <label style={lbl}>Notes (optional)</label>
           <input placeholder="Any additional notes" value={notes} onChange={e => setNotes(e.target.value)} style={inp} />
@@ -302,18 +322,16 @@ export default function BcabaPage() {
       </div>
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '28px 32px', minWidth: 0 }}>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>{monthLabel} — Entries</p>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>{monthLabel} — Entries</p>
         {entries.length === 0 ? (
           <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', padding: '16px 0' }}>No entries yet.</p>
         ) : (
           <div style={{ overflowX: 'auto' as const }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' as const, fontSize: isMobile ? 11 : 13 }}>
               <thead>
-                <tr>
-                  {['Date', 'Type', 'Format', 'Hours', 'Restriction', 'Client'].map(h => (
-                    <th key={h} style={{ textAlign: 'left' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
-                  ))}
-                </tr>
+                <tr>{['Date', 'Type', 'Format', 'Hours', 'Restriction', 'Client'].map(h => (
+                  <th key={h} style={{ textAlign: 'left' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
+                ))}</tr>
               </thead>
               <tbody>
                 {entries.map((e, i) => (

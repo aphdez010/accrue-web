@@ -28,6 +28,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileAgentOpen, setMobileAgentOpen] = useState(false);
   const [totalHours, setTotalHours] = useState<number>(0);
   const { getToken } = useAuth();
+
+  // Link any pending Stripe checkout session (from the pay-first landing page flow)
+  // to this account before running the subscription-status check below.
+  useEffect(() => {
+    const linkPendingCheckoutSession = async () => {
+      const sessionId = sessionStorage.getItem('pending_checkout_session_id');
+      if (!sessionId) return;
+      try {
+        const token = await getToken();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
+        await fetch(`${apiUrl}/billing/link-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+      } catch {
+        // If linking fails, fall through to the normal subscription check below,
+        // which will redirect to /dashboard/billing if the account isn't active.
+      } finally {
+        sessionStorage.removeItem('pending_checkout_session_id');
+      }
+    };
+    linkPendingCheckoutSession();
+  }, []);
+
   useEffect(() => {
     const fetchHours = async () => {
       try {

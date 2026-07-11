@@ -1,20 +1,41 @@
 'use client';
 import { ApiProvider } from '../context/api-context';
-import { useState, useRef, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useState, useRef, useEffect, Suspense } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { useAuth, useClerk, useUser } from '@clerk/nextjs';
 
 type Message = { role: 'user' | 'assistant'; content: string };
+type Role = 'trainee' | 'bcaba' | 'bcba';
+
+function getRoleFromPath(pathname: string, roleParam: string | null): Role {
+  if (roleParam === 'trainee' || roleParam === 'bcaba' || roleParam === 'bcba') return roleParam;
+  const bcbaSupervisorRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus', '/dashboard/bcaba/trainees', '/dashboard/bcaba/invoices'];
+  if (bcbaSupervisorRoutes.some(r => pathname.startsWith(r))) return 'bcba';
+  if (pathname === '/dashboard') return 'bcba';
+  if (pathname.startsWith('/dashboard/bcaba')) return 'bcaba';
+  return 'trainee';
+}
+
+const roleLabels: Record<Role, string> = { trainee: 'Trainee', bcaba: 'BCaBA', bcba: 'BCBA' };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={null}>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </Suspense>
+  );
+}
+
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const bcbaRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus', '/dashboard/bcaba', '/dashboard/bcaba/trainees', '/dashboard/bcaba/invoices', '/dashboard/bcaba/monthly-verification', '/dashboard/bcaba/final-verification'];
-  const [role, setRole] = useState<'trainee' | 'bcba'>(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
+  const searchParams = useSearchParams();
+  const roleParam = searchParams.get('role');
+  const [role, setRole] = useState<Role>(getRoleFromPath(pathname, roleParam));
   useEffect(() => {
-    setRole(bcbaRoutes.some(r => pathname.startsWith(r)) ? 'bcba' : 'trainee');
-  }, [pathname]);
+    setRole(getRoleFromPath(pathname, roleParam));
+  }, [pathname, roleParam]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -137,9 +158,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
             <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2 }}>
-              {(['trainee', 'bcba'] as const).map(r => (
-                <button key={r} onClick={() => setRole(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10px var(--sans)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer' }}>
-                  {r === 'trainee' ? 'Trainee' : 'BCBA'}
+              {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
+                <button key={r} onClick={() => setRole(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10px var(--sans)', padding: '5px 9px', borderRadius: 6, cursor: 'pointer' }}>
+                  {roleLabels[r]}
                 </button>
               ))}
             </div>
@@ -153,20 +174,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div style={{ display: 'flex', overflowX: 'auto', padding: '0 12px 12px', gap: 6 }}>
             {(role === 'trainee' ? [
-              { label: 'Today', href: '/dashboard' },
               { label: 'Log hours', href: '/dashboard/fieldwork' },
               { label: 'Accrual', href: '/dashboard/compliance' },
               { label: 'Vault', href: '/dashboard/vault' },
               { label: 'Import', href: '/dashboard/import' },
               { label: 'M-FVF', href: '/dashboard/monthly-verification' },
-              { label: 'F-FVF', icon: '◆', href: '/dashboard/bcaba/final-verification' },
+              { label: 'F-FVF', href: '/dashboard/bcaba/final-verification' },
               { label: 'Billing', href: '/dashboard/billing' },
+            ] : role === 'bcaba' ? [
+              { label: 'Log hours', href: '/dashboard/bcaba' },
+              { label: 'Accrual', href: '/dashboard/compliance' },
+              { label: 'M-FVF', href: '/dashboard/bcaba/monthly-verification' },
+              { label: 'F-FVF', href: '/dashboard/bcaba/final-verification' },
             ] : [
+              { label: 'Today', href: '/dashboard' },
               { label: 'Roster', href: '/dashboard/roster' },
               { label: 'Sign forms', href: '/dashboard/forms' },
               { label: 'Records', href: '/dashboard/records' },
               { label: 'My CEUs', href: '/dashboard/ceus' },
-              { label: 'BCaBA', href: '/dashboard/bcaba' },
               { label: 'My Trainees', href: '/dashboard/bcaba/trainees' },
               { label: 'Invoices', href: '/dashboard/bcaba/invoices' },
               { label: 'M-FVF', href: '/dashboard/bcaba/monthly-verification' },
@@ -187,28 +212,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div style={{ margin: 12, background: 'var(--bg)', borderRadius: 10, padding: 3, display: 'flex' }}>
-            {(['trainee', 'bcba'] as const).map(r => (
+            {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
               <button key={r} onClick={() => setRole(r)} style={{ flex: 1, border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 11px var(--sans)', padding: '7px 4px', borderRadius: 8, cursor: 'pointer' }}>
-                {r === 'trainee' ? 'Trainee' : 'BCBA'}
+                {roleLabels[r]}
               </button>
             ))}
           </div>
 
           <nav style={{ padding: 8, flex: 1 }}>
             {(role === 'trainee' ? [
-              { label: 'Today', icon: '◉', href: '/dashboard' },
               { label: 'Log hours', icon: '+', href: '/dashboard/fieldwork' },
               { label: 'Accrual record', icon: '↗', href: '/dashboard/compliance' },
               { label: 'Vault', icon: '▣', href: '/dashboard/vault' },
               { label: 'Import history', icon: '⬆', href: '/dashboard/import' },
               { label: 'M-FVF', icon: '✓', href: '/dashboard/monthly-verification' },
               { label: 'F-FVF', icon: '◆', href: '/dashboard/bcaba/final-verification' },
+            ] : role === 'bcaba' ? [
+              { label: 'Log hours', icon: '+', href: '/dashboard/bcaba' },
+              { label: 'Accrual record', icon: '↗', href: '/dashboard/compliance' },
+              { label: 'M-FVF', icon: '✓', href: '/dashboard/bcaba/monthly-verification' },
+              { label: 'F-FVF', icon: '◆', href: '/dashboard/bcaba/final-verification' },
             ] : [
+              { label: 'Today', icon: '◎', href: '/dashboard' },
               { label: 'Roster', icon: '◉', href: '/dashboard/roster' },
               { label: 'Sign forms', icon: '✦', href: '/dashboard/forms' },
               { label: 'Records', icon: '▣', href: '/dashboard/records' },
               { label: 'My CEUs', icon: '↗', href: '/dashboard/ceus' },
-              { label: 'BCaBA', icon: '▤', href: '/dashboard/bcaba' },
               { label: 'My Trainees', icon: '◈', href: '/dashboard/bcaba/trainees' },
               { label: 'Invoices', icon: '$', href: '/dashboard/bcaba/invoices' },
               { label: 'M-FVF', icon: '✓', href: '/dashboard/bcaba/monthly-verification' },

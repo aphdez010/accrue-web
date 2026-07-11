@@ -54,7 +54,7 @@ export default function DashboardPage() {
           <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>{monthLabel} · Supervised Fieldwork</p>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-.02em' }}>Your compliance dashboard</h1>
         </div>
-        <a href="/dashboard/fieldwork" style={{ background: 'var(--spruce)', color: '#fff', font: '600 13px var(--sans)', padding: '11px 20px', borderRadius: 10, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>+ Log hours</a>
+        <a href="/dashboard/fieldwork?role=bcba" style={{ background: 'var(--spruce)', color: '#fff', font: '600 13px var(--sans)', padding: '11px 20px', borderRadius: 10, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>+ Log hours</a>
       </div>
 
       {/* Top 6 stat cards */}

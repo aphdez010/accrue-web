@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useApi } from '../../context/api-context';
 
 const TYPES = ['Unrestricted Hours','Restricted Hours','Experience — Other'];
@@ -13,9 +13,12 @@ const TASK_AREAS = [
   'F. Behavior Assessment','G. Behavior-Change Procedures',
   'H. Selecting & Implementing Interventions','I. Personnel Supervision',
 ];
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const inp = { width: '100%', maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const, WebkitAppearance: 'none' as const };
 const lbl = { display: 'block' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 6 };
+
+function pad(n: number) { return n < 10 ? '0' + n : String(n); }
 
 function calcHours(start: string, end: string) {
   if (!start || !end) return '';
@@ -25,6 +28,9 @@ function calcHours(start: string, end: string) {
   return diff > 0 ? (diff / 60).toFixed(2) : '';
 }
 
+const TYPE_BADGE: Record<string, string> = { 'Unrestricted Hours': 'U', 'Restricted Hours': 'R', 'Experience — Other': 'O' };
+const GROUP_BADGE: Record<string, string> = { 'Individual': 'I', 'Group': 'G' };
+
 export default function FieldworkPage() {
   const { get, post, patch } = useApi();
   const [entries, setEntries] = useState<any[]>([]);
@@ -32,7 +38,6 @@ export default function FieldworkPage() {
   const [busy, setBusy] = useState(false);
   const [ok, setOk] = useState(false);
   const [err, setErr] = useState('');
-  const month = new Date().toISOString().slice(0, 7);
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -40,6 +45,12 @@ export default function FieldworkPage() {
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const monthParam = `${viewYear}-${pad(viewMonth + 1)}`;
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [startTime, setStartTime] = useState('');
@@ -78,6 +89,8 @@ export default function FieldworkPage() {
     setTaskAreaNum(e.task_list_area_number != null ? String(e.task_list_area_number) : '');
     setMonthlyObs(!!e.monthly_observation);
     setNotes(e.notes || '');
+    const form = document.getElementById('fieldwork-log-form');
+    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function cancelEdit() {
@@ -101,13 +114,13 @@ export default function FieldworkPage() {
     }
   }, [startTime, endTime]);
 
-  const load = () => get('/fieldwork?month=' + month).then((r: any) => {
+  const load = () => get('/fieldwork?month=' + monthParam).then((r: any) => {
     const list = Array.isArray(r) ? r : Array.isArray(r?.entries) ? r.entries : [];
     setEntries(list);
     setTotal(list.reduce((s: number, e: any) => s + Number(e.hours || 0), 0));
   }).catch(() => {});
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [viewYear, viewMonth]);
 
   async function submit() {
     if (!date || !hours) return;
@@ -141,12 +154,171 @@ export default function FieldworkPage() {
     finally { setBusy(false); }
   }
 
-  return (
-    <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 900, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
-      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Fieldwork</p>
-      <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 32px' }}>Log Entry</h1>
+  const derivedStats = useMemo(() => {
+    const totalHours = entries.reduce((s, e) => s + Number(e.hours || 0), 0);
+    const unrestrictedHours = entries.filter(e => e.experience_type === 'Unrestricted Hours').reduce((s, e) => s + Number(e.hours || 0), 0);
+    const individualHours = entries.filter(e => e.supervised && e.supervision_group_type === 'Individual').reduce((s, e) => s + Number(e.hours || 0), 0);
+    const groupHours = entries.filter(e => e.supervised && e.supervision_group_type === 'Group').reduce((s, e) => s + Number(e.hours || 0), 0);
+    const unrestrictedPct = totalHours > 0 ? Math.round((unrestrictedHours / totalHours) * 100) : 0;
+    return { totalHours, unrestrictedPct, individualHours, groupHours };
+  }, [entries]);
 
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px 16px' : '28px 32px', marginBottom: 24, minWidth: 0 }}>
+  const hoursByDay = useMemo(() => {
+    const map: Record<number, { total: number; count: number; types: Set<string>; groupTypes: Set<string> }> = {};
+    entries.forEach((e: any) => {
+      const d = String(e.entry_date || '').slice(0, 10);
+      const day = Number(d.slice(8, 10));
+      if (!day) return;
+      if (!map[day]) map[day] = { total: 0, count: 0, types: new Set(), groupTypes: new Set() };
+      map[day].total += Number(e.hours || 0);
+      map[day].count += 1;
+      if (e.experience_type) map[day].types.add(e.experience_type);
+      if (e.supervised && e.supervision_group_type) map[day].groupTypes.add(e.supervision_group_type);
+    });
+    return map;
+  }, [entries]);
+
+  const calendarCells = useMemo(() => {
+    const firstOfMonth = new Date(viewYear, viewMonth, 1);
+    const startWeekday = firstOfMonth.getDay();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < startWeekday; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  }, [viewYear, viewMonth]);
+
+  function goPrevMonth() {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
+    else setViewMonth(m => m - 1);
+  }
+  function goNextMonth() {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  }
+  function goToday() {
+    setViewYear(today.getFullYear());
+    setViewMonth(today.getMonth());
+  }
+
+  function selectDay(day: number) {
+    const iso = `${viewYear}-${pad(viewMonth + 1)}-${pad(day)}`;
+    setDate(iso);
+    const form = document.getElementById('fieldwork-log-form');
+    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const todayStr = today.toISOString().slice(0, 10);
+  const isCurrentMonthView = viewYear === today.getFullYear() && viewMonth === today.getMonth();
+
+  return (
+    <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 960, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Fieldwork</p>
+      <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 24px' }}>Fieldwork Calendar</h1>
+
+      {/* Calendar */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '24px 28px', marginBottom: 24, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap' as const, gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button onClick={goPrevMonth} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 14, color: 'var(--ink)' }}>‹</button>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 600, color: 'var(--ink)', margin: 0, minWidth: 150, textAlign: 'center' as const }}>{monthLabel}</h2>
+            <button onClick={goNextMonth} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 14, color: 'var(--ink)' }}>›</button>
+          </div>
+          {!isCurrentMonthView && (
+            <button onClick={goToday} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>Today</button>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? 4 : 6, marginBottom: 8 }}>
+          {WEEKDAYS.map(w => (
+            <div key={w} style={{ textAlign: 'center' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', padding: '4px 0' }}>{isMobile ? w.slice(0, 1) : w}</div>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? 4 : 6 }}>
+          {calendarCells.map((day, i) => {
+            if (day === null) return <div key={i} />;
+            const iso = `${viewYear}-${pad(viewMonth + 1)}-${pad(day)}`;
+            const dayData = hoursByDay[day];
+            const isToday = iso === todayStr;
+            const isSelected = iso === date;
+            return (
+              <button
+                key={i}
+                onClick={() => selectDay(day)}
+                style={{
+                  aspectRatio: '1',
+                  minHeight: isMobile ? 44 : 64,
+                  border: isSelected ? '2px solid var(--spruce)' : isToday ? '1px solid var(--spruce)' : '1px solid var(--border)',
+                  borderRadius: 8,
+                  background: dayData ? 'rgba(26,122,80,0.06)' : 'var(--bg)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 4,
+                  gap: 2,
+                  position: 'relative' as const,
+                }}
+              >
+                <span style={{ fontFamily: 'var(--mono)', fontSize: isMobile ? 11 : 12, color: isToday ? 'var(--spruce)' : 'var(--ink)', fontWeight: isToday ? 700 : 400 }}>{day}</span>
+                {dayData && (
+                  <>
+                    <span style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: 'var(--spruce)' }}>{dayData.total.toFixed(1)}h</span>
+                    <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
+                      {Array.from(dayData.types).map((t: string) => (
+                        <span key={t} title={t} style={{ fontFamily: 'var(--mono)', fontSize: 8, lineHeight: 1, padding: '1px 3px', borderRadius: 3, background: t === 'Unrestricted Hours' ? 'rgba(26,122,80,0.15)' : 'rgba(0,0,0,0.06)', color: t === 'Unrestricted Hours' ? 'var(--spruce)' : 'var(--muted)' }}>
+                          {TYPE_BADGE[t] || '?'}
+                        </span>
+                      ))}
+                      {Array.from(dayData.groupTypes).map((g: string) => (
+                        <span key={g} title={g} style={{ fontFamily: 'var(--mono)', fontSize: 8, lineHeight: 1, padding: '1px 3px', borderRadius: 3, background: 'rgba(45,143,214,0.12)', color: 'var(--sky)' }}>
+                          {GROUP_BADGE[g] || '?'}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' as const }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 3, background: 'rgba(26,122,80,0.15)', border: '1px solid var(--border)' }} />
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>Hours logged</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 3, border: '1px solid var(--spruce)' }} />
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>Today</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Total Hours</p>
+          <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1 }}>{derivedStats.totalHours.toFixed(1)}</p>
+        </div>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Unrestricted %</p>
+          <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: derivedStats.unrestrictedPct >= 60 ? 'var(--spruce)' : 'var(--amber)', margin: 0, lineHeight: 1 }}>{derivedStats.unrestrictedPct}%</p>
+        </div>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Individual / Group</p>
+          <p style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1.3 }}>
+            {derivedStats.individualHours.toFixed(1)} / {derivedStats.groupHours.toFixed(1)}
+          </p>
+        </div>
+      </div>
+
+      {/* Log entry form */}
+      <div id="fieldwork-log-form" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px 16px' : '28px 32px', marginBottom: 24, minWidth: 0 }}>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>{editingId ? 'Edit Entry' : 'Log Entry'} — {date}</p>
 
         {/* Row 1: Date + Start + End + Hours */}
         {isMobile ? (
@@ -297,21 +469,9 @@ export default function FieldworkPage() {
         </div>
       </div>
 
-      {/* Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Total Hours</p>
-          <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1 }}>{total.toFixed(1)}</p>
-        </div>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Entries</p>
-          <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1 }}>{entries.length}</p>
-        </div>
-      </div>
-
       {/* Entries table */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '28px 32px', minWidth: 0 }}>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>{month} — Entries</p>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>{monthLabel} — Entries</p>
         {entries.length === 0 ? (
           <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', padding: '16px 0' }}>No entries yet.</p>
         ) : (

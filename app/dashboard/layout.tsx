@@ -48,6 +48,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const [mobileAgentOpen, setMobileAgentOpen] = useState(false);
   const [totalHours, setTotalHours] = useState<number>(0);
+  const [totalHoursRequired, setTotalHoursRequired] = useState<number>(2000);
   const { getToken } = useAuth();
 
   // Link any pending Stripe checkout session (from the pay-first landing page flow)
@@ -84,6 +85,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         const res = await fetch(`${apiUrl}/compliance`, { headers: { Authorization: `Bearer ${token}` } });
         const d = await res.json();
         if (d.totalHours !== undefined) setTotalHours(Number(d.totalHours));
+        if (d.totalHoursRequired !== undefined) setTotalHoursRequired(Number(d.totalHoursRequired));
       } catch {}
     };
     fetchHours();
@@ -183,7 +185,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               { label: 'Billing', href: '/dashboard/billing' },
             ] : role === 'bcaba' ? [
               { label: 'Log hours', href: '/dashboard/bcaba' },
-              { label: 'Accrual', href: '/dashboard/compliance' },
+              { label: 'Accrual', href: '/dashboard/compliance?role=bcaba' },
               { label: 'M-FVF', href: '/dashboard/bcaba/monthly-verification' },
               { label: 'F-FVF', href: '/dashboard/bcaba/final-verification' },
             ] : [
@@ -229,7 +231,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               { label: 'F-FVF', icon: '◆', href: '/dashboard/bcaba/final-verification' },
             ] : role === 'bcaba' ? [
               { label: 'Log hours', icon: '+', href: '/dashboard/bcaba' },
-              { label: 'Accrual record', icon: '↗', href: '/dashboard/compliance' },
+              { label: 'Accrual record', icon: '↗', href: '/dashboard/compliance?role=bcaba' },
               { label: 'M-FVF', icon: '✓', href: '/dashboard/bcaba/monthly-verification' },
               { label: 'F-FVF', icon: '◆', href: '/dashboard/bcaba/final-verification' },
             ] : [
@@ -254,10 +256,10 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Total accrual</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 500, color: 'var(--ink)' }}>{totalHours.toFixed(0)}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginLeft: 2 }}>/ 2,000 hrs</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginLeft: 2 }}>/ {totalHoursRequired.toLocaleString()} hrs</span>
             </div>
             <div style={{ height: 4, background: 'var(--border2)', borderRadius: 99, overflow: 'hidden', margin: '8px 0' }}>
-              <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: `${Math.min((totalHours / 2000) * 100, 100).toFixed(1)}%` }} />
+              <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: `${Math.min((totalHours / totalHoursRequired) * 100, 100).toFixed(1)}%` }} />
             </div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>5-yr deadline Aug 2029</div>
           </div>

@@ -153,8 +153,7 @@ export default function SupervisorTraineesPage() {
                   <div
                     key={i}
                     style={{
-                      aspectRatio: '1',
-                      minHeight: isMobile ? 44 : 64,
+                      minHeight: isMobile ? 60 : 86,
                       border: isToday ? '1px solid var(--spruce)' : '1px solid var(--border)',
                       borderRadius: 8,
                       background: dayData ? 'rgba(26,122,80,0.06)' : 'var(--bg)',
@@ -170,10 +169,15 @@ export default function SupervisorTraineesPage() {
                     {dayData && (
                       <>
                         <span style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: 'var(--spruce)' }}>{dayData.total.toFixed(1)}h</span>
-                        <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2, alignItems: 'center', width: '100%' }}>
                           {Array.from(dayData.restrictionTypes).map((r: string) => (
-                            <span key={r} title={r === 'unrestricted' ? 'Unrestricted' : 'Restricted'} style={{ fontFamily: 'var(--mono)', fontSize: 8, lineHeight: 1, padding: '1px 3px', borderRadius: 3, background: r === 'unrestricted' ? 'rgba(26,122,80,0.15)' : 'rgba(0,0,0,0.06)', color: r === 'unrestricted' ? 'var(--spruce)' : 'var(--muted)' }}>
-                              {r === 'unrestricted' ? 'U' : 'R'}
+                            <span key={r} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, lineHeight: 1.3, padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' as const, background: r === 'unrestricted' ? 'rgba(26,122,80,0.15)' : 'rgba(0,0,0,0.06)', color: r === 'unrestricted' ? 'var(--spruce)' : 'var(--muted)' }}>
+                              {r === 'unrestricted' ? 'Unrestricted' : 'Restricted'}
+                            </span>
+                          ))}
+                          {Array.from(dayData.supFormats).map((f: string) => (
+                            <span key={f} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, lineHeight: 1.3, padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' as const, background: 'rgba(45,143,214,0.12)', color: 'var(--sky)' }}>
+                              {f === 'individual' ? 'Individual' : 'Group'}
                             </span>
                           ))}
                         </div>

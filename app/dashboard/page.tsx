@@ -6,6 +6,7 @@ export default function DashboardPage() {
   const api = useApi();
   const [data, setData] = useState<any>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [trackBusy, setTrackBusy] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -15,11 +16,25 @@ export default function DashboardPage() {
   const month = new Date().toISOString().slice(0, 7);
   const monthLabel = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
+  const loadCompliance = () => api.get('/compliance').then(setData).catch(() => {});
+
   useEffect(() => {
-    api.get('/compliance').then(setData).catch(() => {});
+    loadCompliance();
   }, []);
 
   const d = data;
+  const targetHours = d?.totalHoursRequired || 2000;
+  const track = d?.track || 'supervised';
+
+  async function setTrack(newTrack: 'supervised' | 'concentrated') {
+    if (newTrack === track || trackBusy) return;
+    setTrackBusy(true);
+    try {
+      await api.patch('/professionals/track', { track: newTrack });
+      await loadCompliance();
+    } catch {}
+    finally { setTrackBusy(false); }
+  }
 
   const statCard = (label: string, value: string, sub?: string, color?: string) => (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '14px 16px' : '20px 24px', minWidth: 0 }}>
@@ -49,7 +64,7 @@ export default function DashboardPage() {
   return (
     <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 900, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>{monthLabel} · Supervised Fieldwork</p>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-.02em' }}>Your compliance dashboard</h1>
@@ -57,9 +72,19 @@ export default function DashboardPage() {
         <a href="/dashboard/fieldwork?role=bcba" style={{ background: 'var(--spruce)', color: '#fff', font: '600 13px var(--sans)', padding: '11px 20px', borderRadius: 10, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>+ Log hours</a>
       </div>
 
+      {/* Fieldwork track toggle */}
+      <div style={{ display: 'inline-flex', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 3, marginBottom: 24, gap: 2 }}>
+        <button onClick={() => setTrack('supervised')} disabled={trackBusy} style={{ border: 0, background: track === 'supervised' ? 'var(--spruce)' : 'transparent', color: track === 'supervised' ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', padding: '8px 16px', borderRadius: 8, cursor: trackBusy ? 'not-allowed' : 'pointer' }}>
+          Supervised · 2,000 hrs
+        </button>
+        <button onClick={() => setTrack('concentrated')} disabled={trackBusy} style={{ border: 0, background: track === 'concentrated' ? 'var(--spruce)' : 'transparent', color: track === 'concentrated' ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', padding: '8px 16px', borderRadius: 8, cursor: trackBusy ? 'not-allowed' : 'pointer' }}>
+          Concentrated · 1,500 hrs
+        </button>
+      </div>
+
       {/* Top 6 stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
-        {statCard('Total Hours', d ? Number(d.totalHours||0).toFixed(1) : '—', d ? `${((d.totalHours/2000)*100).toFixed(1)}% of 2,000` : undefined)}
+        {statCard('Total Hours', d ? Number(d.totalHours||0).toFixed(1) : '—', d ? `${((d.totalHours/targetHours)*100).toFixed(1)}% of ${targetHours.toLocaleString()}` : undefined)}
         {statCard('Supervised', d ? Number(d.supervisedHours||0).toFixed(1) + ' hrs' : '—', d ? `${Number(d.supervisionPct||0).toFixed(1)}% of total` : undefined, d?.supervisionMet ? 'var(--spruce)' : d ? 'var(--amber)' : undefined)}
         {statCard('Independent', d ? Number(d.independentHours||0).toFixed(1) + ' hrs' : '—', d ? `${d.totalHours > 0 ? (100 - d.supervisionPct).toFixed(1) : 0}% of total` : undefined)}
         {statCard('Restricted %', d ? Number(d.restrictedPct||0).toFixed(1) + '%' : '—', d?.restrictedMet ? 'Within 50% limit' : 'Over limit', d?.restrictedMet ? 'var(--spruce)' : d ? 'var(--amber)' : undefined)}
@@ -71,7 +96,7 @@ export default function DashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginBottom: 16 }}>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>BACB Requirements</p>
-          {reqRow('Supervision ≥ 5%', d?.supervisionMet, d ? Number(d.supervisionPct||0).toFixed(1) + '%' : '—')}
+          {reqRow(track === 'concentrated' ? 'Supervision ≥ 10%' : 'Supervision ≥ 5%', d?.supervisionMet, d ? Number(d.supervisionPct||0).toFixed(1) + '%' : '—')}
           {reqRow('Restricted ≤ 50%', d?.restrictedMet, d ? Number(d.restrictedPct||0).toFixed(1) + '%' : '—')}
           {reqRow('Supervision contacts', d ? d.supervisionContacts >= 2 : undefined, d ? `${d.supervisionContacts} this month` : '—')}
           {reqRow('Monthly observation', d?.monthlyObservationMet, d?.monthlyObservationMet ? 'Completed' : 'Not yet', true)}
@@ -81,11 +106,11 @@ export default function DashboardPage() {
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>Hours Pace</p>
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{d ? Number(d.totalHours||0).toFixed(0) : 0} / 2,000 hrs</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{d ? ((d.totalHours/2000)*100).toFixed(1) : 0}%</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{d ? Number(d.totalHours||0).toFixed(0) : 0} / {targetHours.toLocaleString()} hrs</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{d ? ((d.totalHours/targetHours)*100).toFixed(1) : 0}%</span>
             </div>
             <div style={{ height: 8, background: 'var(--border)', borderRadius: 99, overflow: 'hidden' }}>
-              <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: `${d ? Math.min((d.totalHours/2000)*100, 100) : 0}%`, transition: 'width .6s ease' }} />
+              <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: `${d ? Math.min((d.totalHours/targetHours)*100, 100) : 0}%`, transition: 'width .6s ease' }} />
             </div>
           </div>
           {[['Unrestricted', d?.unrestricted], ['Restricted', d?.restricted], ['Supervised', d?.supervisedHours], ['Independent', d?.independentHours]].map(([label, val]) => (

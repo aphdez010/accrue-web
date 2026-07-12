@@ -28,9 +28,6 @@ function calcHours(start: string, end: string) {
   return diff > 0 ? (diff / 60).toFixed(2) : '';
 }
 
-const TYPE_BADGE: Record<string, string> = { 'Unrestricted Hours': 'U', 'Restricted Hours': 'R', 'Experience — Other': 'O' };
-const GROUP_BADGE: Record<string, string> = { 'Individual': 'I', 'Group': 'G' };
-
 export default function FieldworkPage() {
   const { get, post, patch } = useApi();
   const [entries, setEntries] = useState<any[]>([]);
@@ -38,6 +35,8 @@ export default function FieldworkPage() {
   const [busy, setBusy] = useState(false);
   const [ok, setOk] = useState(false);
   const [err, setErr] = useState('');
+  const [track, setTrackState] = useState<'supervised' | 'concentrated'>('supervised');
+  const [trackBusy, setTrackBusy] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -45,6 +44,24 @@ export default function FieldworkPage() {
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  useEffect(() => {
+    get('/professionals/me').then((pro: any) => {
+      if (pro?.bcba_supervision_track === 'concentrated') setTrackState('concentrated');
+    }).catch(() => {});
+  }, []);
+
+  async function setTrack(newTrack: 'supervised' | 'concentrated') {
+    if (newTrack === track || trackBusy) return;
+    setTrackBusy(true);
+    try {
+      await patch('/professionals/track', { track: newTrack });
+      setTrackState(newTrack);
+    } catch {}
+    finally { setTrackBusy(false); }
+  }
+
+  const targetHours = track === 'concentrated' ? 1500 : 2000;
 
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -215,7 +232,17 @@ export default function FieldworkPage() {
   return (
     <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 960, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Fieldwork</p>
-      <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 24px' }}>Fieldwork Calendar</h1>
+      <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 20px' }}>Fieldwork Calendar</h1>
+
+      {/* Fieldwork track toggle */}
+      <div style={{ display: 'inline-flex', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 3, marginBottom: 24, gap: 2 }}>
+        <button onClick={() => setTrack('supervised')} disabled={trackBusy} style={{ border: 0, background: track === 'supervised' ? 'var(--spruce)' : 'transparent', color: track === 'supervised' ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', padding: '8px 16px', borderRadius: 8, cursor: trackBusy ? 'not-allowed' : 'pointer' }}>
+          Supervised · 2,000 hrs
+        </button>
+        <button onClick={() => setTrack('concentrated')} disabled={trackBusy} style={{ border: 0, background: track === 'concentrated' ? 'var(--spruce)' : 'transparent', color: track === 'concentrated' ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', padding: '8px 16px', borderRadius: 8, cursor: trackBusy ? 'not-allowed' : 'pointer' }}>
+          Concentrated · 1,500 hrs
+        </button>
+      </div>
 
       {/* Calendar */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '24px 28px', marginBottom: 24, minWidth: 0 }}>
@@ -248,8 +275,7 @@ export default function FieldworkPage() {
                 key={i}
                 onClick={() => selectDay(day)}
                 style={{
-                  aspectRatio: '1',
-                  minHeight: isMobile ? 44 : 64,
+                  minHeight: isMobile ? 60 : 86,
                   border: isSelected ? '2px solid var(--spruce)' : isToday ? '1px solid var(--spruce)' : '1px solid var(--border)',
                   borderRadius: 8,
                   background: dayData ? 'rgba(26,122,80,0.06)' : 'var(--bg)',
@@ -267,15 +293,15 @@ export default function FieldworkPage() {
                 {dayData && (
                   <>
                     <span style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 10 : 12, fontWeight: 600, color: 'var(--spruce)' }}>{dayData.total.toFixed(1)}h</span>
-                    <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2, alignItems: 'center', width: '100%' }}>
                       {Array.from(dayData.types).map((t: string) => (
-                        <span key={t} title={t} style={{ fontFamily: 'var(--mono)', fontSize: 8, lineHeight: 1, padding: '1px 3px', borderRadius: 3, background: t === 'Unrestricted Hours' ? 'rgba(26,122,80,0.15)' : 'rgba(0,0,0,0.06)', color: t === 'Unrestricted Hours' ? 'var(--spruce)' : 'var(--muted)' }}>
-                          {TYPE_BADGE[t] || '?'}
+                        <span key={t} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, lineHeight: 1.3, padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' as const, background: t === 'Unrestricted Hours' ? 'rgba(26,122,80,0.15)' : 'rgba(0,0,0,0.06)', color: t === 'Unrestricted Hours' ? 'var(--spruce)' : 'var(--muted)' }}>
+                          {t.replace(' Hours', '')}
                         </span>
                       ))}
                       {Array.from(dayData.groupTypes).map((g: string) => (
-                        <span key={g} title={g} style={{ fontFamily: 'var(--mono)', fontSize: 8, lineHeight: 1, padding: '1px 3px', borderRadius: 3, background: 'rgba(45,143,214,0.12)', color: 'var(--sky)' }}>
-                          {GROUP_BADGE[g] || '?'}
+                        <span key={g} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, lineHeight: 1.3, padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' as const, background: 'rgba(45,143,214,0.12)', color: 'var(--sky)' }}>
+                          {g}
                         </span>
                       ))}
                     </div>
@@ -303,6 +329,7 @@ export default function FieldworkPage() {
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Total Hours</p>
           <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1 }}>{derivedStats.totalHours.toFixed(1)}</p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{((derivedStats.totalHours / targetHours) * 100).toFixed(1)}% of {targetHours.toLocaleString()}</p>
         </div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Unrestricted %</p>

@@ -104,7 +104,7 @@ export default function BillingPage() {
 
           {/* Features list */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px' }}>
-            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>What's included</p>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>What&apos;s included</p>
             {[
               'Fieldwork hour logging (BACB-compliant)',
               'Compliance dashboard with all BACB metrics',

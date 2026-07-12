@@ -2,50 +2,63 @@
 import { useState } from 'react';
 import { useApi } from '../../context/api-context';
 
-const REQUIRED = ['entry_date','hours','experience_type'];
+const REQUIRED = ['entry_date', 'hours', 'experience_type'];
+
 const SAMPLE = `entry_date,hours,experience_type,supervised,supervisor_name,notes
 2026-06-01,2.5,Unrestricted Hours,false,,Morning session
 2026-06-02,1.0,Supervision - Individual,true,Dr. Smith,Weekly supervision
 2026-06-03,3.0,Restricted Hours,false,,Afternoon session`;
 
-function parseCSV(text) {
+interface CsvRow {
+  entry_date?: string;
+  hours?: string;
+  experience_type?: string;
+  supervised?: string;
+  supervisor_name?: string;
+  notes?: string;
+  [key: string]: string | undefined;
+}
+
+function parseCSV(text: string): CsvRow[] {
   const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/ /g,'_'));
-  return lines.slice(1).map(line => {
+  const headers = lines[0].split(',').map((h: string) => h.trim().toLowerCase().replace(/ /g, '_'));
+  return lines.slice(1).map((line: string) => {
     const vals = line.split(',');
-    const row = {};
-    headers.forEach((h, i) => { row[h] = (vals[i]||'').trim(); });
+    const row: CsvRow = {};
+    headers.forEach((h: string, i: number) => { row[h] = (vals[i] || '').trim(); });
     return row;
   });
 }
 
-function validate(rows) {
-  const errors = [];
-  rows.forEach((row, i) => {
+function validate(rows: CsvRow[]): string[] {
+  const errors: string[] = [];
+  rows.forEach((row: CsvRow, i: number) => {
     REQUIRED.forEach(f => {
-      if (!row[f]) errors.push(`Row ${i+2}: missing ${f}`);
+      if (!row[f]) errors.push(`Row ${i + 2}: missing ${f}`);
     });
-    if (row.hours && isNaN(parseFloat(row.hours))) errors.push(`Row ${i+2}: hours must be a number`);
-    if (row.entry_date && !/^\d{4}-\d{2}-\d{2}$/.test(row.entry_date)) errors.push(`Row ${i+2}: entry_date must be YYYY-MM-DD`);
+    if (row.hours && isNaN(parseFloat(row.hours))) errors.push(`Row ${i + 2}: hours must be a number`);
+    if (row.entry_date && !/^\d{4}-\d{2}-\d{2}$/.test(row.entry_date)) errors.push(`Row ${i + 2}: entry_date must be YYYY-MM-DD`);
   });
   return errors;
 }
 
 export default function ImportPage() {
   const { post } = useApi();
-  const [rows, setRows] = useState([]);
-  const [errors, setErrors] = useState([]);
+  const [rows, setRows] = useState<CsvRow[]>([]);
+  const [errors, setErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
   const [done, setDone] = useState(0);
   const [failed, setFailed] = useState(0);
   const [finished, setFinished] = useState(false);
   const [dragging, setDragging] = useState(false);
 
-  function handleFile(file) {
+  function handleFile(file: File | null | undefined) {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = e => {
-      const parsed = parseCSV(e.target.result);
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      const result = e.target?.result;
+      if (typeof result !== 'string') return;
+      const parsed = parseCSV(result);
       const errs = validate(parsed);
       setErrors(errs);
       setRows(parsed);
@@ -54,7 +67,7 @@ export default function ImportPage() {
     reader.readAsText(file);
   }
 
-  function onDrop(e) {
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault(); setDragging(false);
     handleFile(e.dataTransfer.files[0]);
   }
@@ -67,14 +80,14 @@ export default function ImportPage() {
       try {
         await post('/fieldwork', {
           entry_date: row.entry_date,
-          hours: parseFloat(row.hours),
+          hours: parseFloat(row.hours || '0'),
           experience_type: row.experience_type,
           supervised: row.supervised === 'true',
           supervisor_name: row.supervisor_name || null,
           notes: row.notes || null,
         });
         d++; setDone(d);
-      } catch(_) { f++; setFailed(f); }
+      } catch (_) { f++; setFailed(f); }
     }
     setImporting(false); setFinished(true);
   }
@@ -87,7 +100,7 @@ export default function ImportPage() {
   }
 
   const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px' };
-  const lbl = { fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)' };
+  const lbl = { fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--muted)' };
 
   return (
     <div style={{ padding: 40, maxWidth: 860 }}>
@@ -102,17 +115,16 @@ export default function ImportPage() {
             Download sample
           </button>
         </div>
-
         <div
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
-          onClick={() => document.getElementById('csv-input').click()}
+          onClick={() => document.getElementById('csv-input')?.click()}
           style={{ border: '2px dashed ' + (dragging ? 'var(--spruce)' : 'var(--border)'), borderRadius: 10, padding: '40px 24px', textAlign: 'center', cursor: 'pointer', background: dragging ? 'rgba(26,122,80,0.04)' : 'transparent', transition: 'all 0.15s' }}
         >
           <p style={{ fontFamily: 'var(--display)', fontSize: 16, color: 'var(--muted)', marginBottom: 6 }}>Drop CSV here or click to browse</p>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>Accepts .csv files</p>
-          <input id="csv-input" type="file" accept=".csv" style={{ display: 'none' }} onChange={e => handleFile(e.target.files[0])} />
+          <input id="csv-input" type="file" accept=".csv" style={{ display: 'none' }} onChange={e => handleFile(e.target.files?.[0])} />
         </div>
       </div>
 
@@ -137,10 +149,9 @@ export default function ImportPage() {
               </button>
             )}
           </div>
-
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>{['Date','Hours','Type','Supervised','Supervisor','Notes'].map(h => (
+              <tr>{['Date', 'Hours', 'Type', 'Supervised', 'Supervisor', 'Notes'].map(h => (
                 <th key={h} style={{ textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
               ))}</tr>
             </thead>

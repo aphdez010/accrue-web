@@ -12,7 +12,6 @@ export default function CEUsPage() {
   const [ceus, setCeus] = useState<CEU[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ course_title: '', provider: '', hours: '', completion_date: new Date().toISOString().slice(0, 10), category: 'general' });
 
@@ -26,12 +25,12 @@ export default function CEUsPage() {
     setSaving(true);
     try {
       await post('/ceus', { ...form, hours: Number(form.hours) });
-      setSaved(true);
       setForm({ course_title: '', provider: '', hours: '', completion_date: new Date().toISOString().slice(0, 10), category: 'general' });
       setShowForm(false);
       load();
-      setTimeout(() => setSaved(false), 3000);
-    } catch (e) {}
+    } catch {
+      // Save failed silently — form stays open so the user can retry.
+    }
     setSaving(false);
   };
 

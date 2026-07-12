@@ -85,8 +85,14 @@ export default function FieldworkPage() {
   const [taskArea, setTaskArea] = useState('');
   const [taskAreaNum, setTaskAreaNum] = useState('');
   const [monthlyObs, setMonthlyObs] = useState(false);
+  const [observationMinutes, setObservationMinutes] = useState('');
   const [notes, setNotes] = useState('');
+  const [entryFieldworkType, setEntryFieldworkType] = useState<'supervised' | 'concentrated'>(track);
   const [editingId, setEditingId] = useState<string | number | null>(null);
+
+  useEffect(() => {
+    if (!editingId) setEntryFieldworkType(track);
+  }, [track, editingId]);
 
   function startEdit(e: any) {
     setEditingId(e.id);
@@ -105,7 +111,9 @@ export default function FieldworkPage() {
     setTaskArea(e.task_list_area || '');
     setTaskAreaNum(e.task_list_area_number != null ? String(e.task_list_area_number) : '');
     setMonthlyObs(!!e.monthly_observation);
+    setObservationMinutes(e.observation_minutes != null ? String(e.observation_minutes) : '');
     setNotes(e.notes || '');
+    setEntryFieldworkType(e.fieldwork_type === 'concentrated' ? 'concentrated' : 'supervised');
     const form = document.getElementById('fieldwork-log-form');
     if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -122,6 +130,8 @@ export default function FieldworkPage() {
     setHours(''); setStartTime(''); setEndTime(''); setNotes('');
     setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
     setSupervised(false); setMonthlyObs(false);
+    setObservationMinutes('');
+    setEntryFieldworkType(track);
   }
 
   useEffect(() => {
@@ -152,9 +162,11 @@ export default function FieldworkPage() {
         task_list_area: taskArea || null,
         task_list_area_number: taskAreaNum ? parseInt(taskAreaNum) : null,
         monthly_observation: monthlyObs,
+        observation_minutes: monthlyObs && observationMinutes ? parseInt(observationMinutes) : null,
         entry_sync_type: entrySyncType,
         supervisor_present: supervisorPresent,
         supervision_group_type: supervised ? supervisionGroupType : null,
+        fieldwork_type: entryFieldworkType,
       };
       if (editingId) {
         await patch('/fieldwork/' + editingId, body);
@@ -164,7 +176,7 @@ export default function FieldworkPage() {
       setEditingId(null);
       setHours(''); setStartTime(''); setEndTime(''); setNotes('');
       setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
-      setSupervised(false); setMonthlyObs(false);
+      setSupervised(false); setMonthlyObs(false); setObservationMinutes('');
       setOk(true); setTimeout(() => setOk(false), 3000);
       load();
     } catch (e: any) { setErr(e.message || 'Error'); }
@@ -466,14 +478,20 @@ export default function FieldworkPage() {
           </label>
         </div>
 
-        {/* Monthly observation */}
-        <div style={{ marginBottom: 20 }}>
+        {/* Monthly observation + minutes */}
+        <div style={{ display: 'grid', gridTemplateColumns: monthlyObs ? '1fr 200px' : '1fr', gap: 16, marginBottom: 20, alignItems: 'end' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
             <div onClick={() => setMonthlyObs(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (monthlyObs ? 'var(--spruce)' : 'var(--border)'), background: monthlyObs ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
               {monthlyObs && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             </div>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Monthly observation (supervisor present)</span>
           </label>
+          {monthlyObs && (
+            <div style={{ minWidth: 0 }}>
+              <label style={lbl}>Observation Minutes</label>
+              <input type="number" min="0" placeholder="e.g. 30" value={observationMinutes} onChange={e => setObservationMinutes(e.target.value)} style={inp} />
+            </div>
+          )}
         </div>
 
         {/* Notes */}
@@ -520,7 +538,7 @@ export default function FieldworkPage() {
                     <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontFamily: 'var(--mono)', background: e.supervised ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: e.supervised ? 'var(--spruce)' : 'var(--muted)' }}>{e.supervised ? e.supervision_format || 'Yes' : 'No'}</span>
                   </td>
                   <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.task_list_area ? `${e.task_list_area}${e.task_list_area_number ? ' #'+e.task_list_area_number : ''}` : '—'}</td>
-                  <td style={{ padding: '12px 0', fontFamily: 'var(--mono)', fontSize: 11 }}>{e.monthly_observation ? <span style={{ color: 'var(--spruce)' }}>✓</span> : '—'}</td>
+                  <td style={{ padding: '12px 0', fontFamily: 'var(--mono)', fontSize: 11 }}>{e.monthly_observation ? <span style={{ color: 'var(--spruce)' }}>✓{e.observation_minutes ? ` ${e.observation_minutes}m` : ''}</span> : '—'}</td>
                   <td style={{ padding: '12px 0 12px 16px' }}>
                     <button onClick={() => startEdit(e)} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', cursor: 'pointer' }}>
                       Edit

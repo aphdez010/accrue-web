@@ -15,7 +15,7 @@ export default function FormsPage() {
   });
 
   useEffect(() => {
-    get('/roster').then(r => setRbts(Array.isArray(r) ? r.map((x: any) => ({ id: x.id, name: x.name })) : [])).catch(() => {});
+    get('/roster').then(r => setRbts(Array.isArray(r) ? r.map((x: { id: number; name: string }) => ({ id: x.id, name: x.name })) : [])).catch(() => {});
   }, []);
 
   const handleSubmit = async () => {
@@ -26,7 +26,9 @@ export default function FormsPage() {
       setSaved(true);
       setForm({ supervisee_id: '', contact_date: new Date().toISOString().slice(0, 10), duration_minutes: '', contact_type: 'individual', notes: '' });
       setTimeout(() => setSaved(false), 3000);
-    } catch (e) {}
+    } catch {
+      // Save failed silently — form stays open so the user can retry.
+    }
     setSaving(false);
   };
 

@@ -31,8 +31,8 @@ export default function RosterPage() {
       await post('/invites', { email: inviteEmail.trim() });
       setInviteSuccess(true);
       setInviteEmail('');
-    } catch (err: any) {
-      setInviteError(err?.message || 'Failed to send invite. Please try again.');
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : 'Failed to send invite. Please try again.');
     } finally {
       setInviteLoading(false);
     }
@@ -167,7 +167,7 @@ export default function RosterPage() {
                 <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Invite</p>
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>Add an RBT to your roster</h2>
                 <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 24, lineHeight: 1.6 }}>
-                  They'll receive an email invitation to create their Supervisd account and appear on your roster.
+                  They&apos;ll receive an email invitation to create their Supervisd account and appear on your roster.
                 </p>
 
                 <label style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>

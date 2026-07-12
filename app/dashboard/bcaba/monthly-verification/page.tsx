@@ -126,7 +126,7 @@ export default function MonthlyVerificationPage() {
       {loading ? (
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>Loading...</p>
       ) : verifications.length === 0 ? (
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>No monthly verifications yet. Click "Draft {monthLabel} M-FVF" to generate one from logged fieldwork hours.</p>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>No monthly verifications yet. Click &quot;Draft {monthLabel} M-FVF&quot; to generate one from logged fieldwork hours.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
           {verifications.map(v => {

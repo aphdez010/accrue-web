@@ -126,7 +126,7 @@ export default function InvoicesPage() {
       {loading ? (
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>Loading...</p>
       ) : invoices.length === 0 ? (
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>No invoices yet. Click "Draft {monthLabel} Invoices" to generate them from logged fieldwork hours.</p>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>No invoices yet. Click &quot;Draft {monthLabel} Invoices&quot; to generate them from logged fieldwork hours.</p>
       ) : (
         <>
           {(['draft', 'sent', 'paid'] as const).map(status => (

@@ -4,14 +4,27 @@ import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../context/api-context';
 import SignatureCanvas from 'react-signature-canvas';
 
+const ADJUSTMENT_REASON_LABELS: Record<string, string> = {
+  no_observation: 'No client observation logged — entire month ineligible',
+  below_minimum_hours: 'Below the 20-hour monthly minimum — entire month ineligible',
+  trimmed_to_max_hours: 'Independent hours trimmed to the monthly maximum',
+  group_trimmed_to_individual: 'Group supervision hours reduced to match individual hours',
+  prorated_for_contacts: 'Hours prorated — not enough supervisor contacts this month',
+  independent_hours_reduced_for_supervision_pct: 'Independent hours reduced to meet the supervision percentage',
+  concentrated_hours_not_prorated_see_handbook_p23: 'Concentrated month did not meet all requirements — hours cannot be prorated (BACB Handbook p.23) and are ineligible in full',
+};
+
 export default function CompliancePage() {
-  const { get } = useApi();
+  const { get, patch } = useApi();
   const { getToken } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [exporting, setExporting] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [startDateInput, setStartDateInput] = useState('');
+  const [savingStartDate, setSavingStartDate] = useState(false);
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -23,10 +36,28 @@ export default function CompliancePage() {
 
   const month = selectedMonth;
 
-  useEffect(() => {
+  const loadCompliance = useCallback(() => {
     setLoading(true);
     get('/compliance').then(setData).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+  }, [get]);
+
+  useEffect(() => {
+    loadCompliance();
+  }, [loadCompliance]);
+
+  const handleSaveStartDate = async () => {
+    if (!startDateInput) return;
+    setSavingStartDate(true);
+    try {
+      await patch('/compliance/fieldwork-start-date', { fieldworkStartDate: startDateInput });
+      loadCompliance();
+    } catch (err) {
+      console.error('Failed to save fieldwork start date:', err);
+      alert('Could not save your fieldwork start date. Please try again.');
+    } finally {
+      setSavingStartDate(false);
+    }
+  };
 
   const handleExportClick = () => {
     setShowSigModal(true);
@@ -66,6 +97,7 @@ export default function CompliancePage() {
   };
 
   const d = data;
+  const totalRequired = d?.totalHoursRequired || 2000;
 
   const card = (label: string, value: string, sub?: string, color?: string) => (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
@@ -119,18 +151,94 @@ export default function CompliancePage() {
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--amber)' }}>No data yet — log some hours first.</p>
       ) : (
         <>
+          {d.fieldworkStartDateSource === 'inferred_from_earliest_entry' && (
+            <div style={{ background: 'rgba(255,160,0,0.08)', border: '1px solid rgba(255,160,0,0.3)', borderRadius: 12, padding: '20px 24px', marginBottom: 16 }}>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>
+                When did your fieldwork clock start?
+              </p>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 14, lineHeight: 1.6 }}>
+                This is the date your supervision contract was signed and your qualifying coursework began — not
+                necessarily the date of your first logged hour. We use this to confirm which BACB rule set applies to
+                you and your 5-year fieldwork deadline.
+              </p>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                  type="date"
+                  value={startDateInput}
+                  onChange={e => setStartDateInput(e.target.value)}
+                  style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', backgroundColor: 'var(--surface)', outline: 'none' }}
+                />
+                <button
+                  onClick={handleSaveStartDate}
+                  disabled={savingStartDate || !startDateInput}
+                  style={{ padding: '9px 18px', borderRadius: 8, backgroundColor: savingStartDate || !startDateInput ? 'rgba(26,122,80,0.4)' : 'var(--spruce)', color: '#fff', border: 'none', fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 600, cursor: savingStartDate || !startDateInput ? 'not-allowed' : 'pointer' }}
+                >
+                  {savingStartDate ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 16 }}>
-            {card('Total Hours', Number(d.totalHours||0).toFixed(1), `${((d.totalHours/2000)*100).toFixed(1)}% of 2,000`)}
-            {card('Supervised', Number(d.supervisedHours||0).toFixed(1)+' hrs', `${Number(d.supervisionPct||0).toFixed(1)}%`, d.supervisionMet ? 'var(--spruce)' : 'var(--amber)')}
-            {card('Independent', Number(d.independentHours||0).toFixed(1)+' hrs', `${d.totalHours > 0 ? (100-d.supervisionPct).toFixed(1) : 0}%`)}
-            {card('Restricted', Number(d.restrictedPct||0).toFixed(1)+'%', d.restrictedMet ? 'Within limit' : 'Over 50% limit', d.restrictedMet ? 'var(--spruce)' : 'var(--amber)')}
+            {card('Total Hours', Number(d.totalHours || 0).toFixed(1), `${((d.totalHours / totalRequired) * 100).toFixed(1)}% of ${totalRequired.toLocaleString()}`)}
+            {card('Supervised', Number(d.supervisedHours || 0).toFixed(1) + ' hrs', `${Number(d.supervisionPct || 0).toFixed(1)}%`, d.supervisionMet ? 'var(--spruce)' : 'var(--amber)')}
+            {card('Independent', Number(d.independentHours || 0).toFixed(1) + ' hrs', `${d.totalHours > 0 ? (100 - d.supervisionPct).toFixed(1) : 0}%`)}
+            {card('Restricted', Number(d.restrictedPct || 0).toFixed(1) + '%', d.restrictedMet ? 'Within limit' : 'Over limit', d.restrictedMet ? 'var(--spruce)' : 'var(--amber)')}
           </div>
+
+          {d.combinedTrackProgress && (
+            <div style={{ background: 'rgba(45,143,214,0.08)', border: '1px solid rgba(45,143,214,0.3)', borderRadius: 12, padding: '20px 24px', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
+                  Combined track progress
+                </p>
+                <span style={{ display: 'inline-block', padding: '3px 12px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: d.combinedTrackProgress.meetsMinimum ? 'rgba(26,122,80,0.1)' : 'rgba(45,143,214,0.12)', color: d.combinedTrackProgress.meetsMinimum ? 'var(--spruce)' : 'var(--sky)' }}>
+                  {d.combinedTrackProgress.meetsMinimum ? 'Minimum met' : 'Below minimum'}
+                </span>
+              </div>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 10 }}>
+                You&apos;ve logged hours under both Supervised ({d.combinedTrackProgress.supervisedHours} hrs) and Concentrated ({d.combinedTrackProgress.concentratedHours} hrs) fieldwork. Per BACB Handbook p.15, Concentrated hours count at a 1.33× multiplier when combined toward the 2,000-hour total — for informational purposes only, this does not change your actual eligible hours above.
+              </p>
+              <p style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
+                {d.combinedTrackProgress.adjustedTotal} <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 400, color: 'var(--muted)' }}>combined hours toward 2,000</span>
+              </p>
+            </div>
+          )}
+
+          {d.hoursAdjustmentApplied && (
+            <div style={{ background: 'rgba(255,160,0,0.08)', border: '1px solid rgba(255,160,0,0.3)', borderRadius: 12, padding: '20px 24px', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
+                  Some logged hours aren&apos;t currently BACB-eligible
+                </p>
+                <p style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 600, color: 'var(--amber)', margin: 0 }}>
+                  {d.totalEligibleHours} <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 400, color: 'var(--muted)' }}>eligible of {d.totalHours} logged</span>
+                </p>
+              </div>
+              <div>
+                {(d.monthlyBreakdown || []).filter((m: any) => m.reasons?.length > 0).map((m: any) => (
+                  <div key={m.month} style={{ padding: '10px 0', borderTop: '1px solid rgba(255,160,0,0.2)' }}>
+                    <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', margin: '0 0 4px' }}>
+                      {m.month}: {m.eligibleHours} of {m.rawHours} hrs eligible
+                    </p>
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      {m.reasons.map((r: string) => (
+                        <li key={r} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 2 }}>
+                          {ADJUSTMENT_REASON_LABELS[r] || r}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px', marginBottom: 24, minWidth: 0 }}>
             <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>BACB Requirements — {month}</p>
-            {badge(d.supervisionMet, 'Supervision ≥ 5% of hours', Number(d.supervisionPct||0).toFixed(1)+' %')}
-            {badge(d.restrictedMet, 'Restricted hours ≤ 50% of total', Number(d.restrictedPct||0).toFixed(1)+' %')}
-            {badge(d.supervisionContacts >= 2, 'Supervision contacts this month', `${d.supervisionContacts} contact${d.supervisionContacts !== 1 ? 's' : ''}`)}
+            {badge(d.supervisionMet, `Supervision ≥ ${(d.supervisionPct !== undefined ? '' : '')}${Math.round((d.totalHoursRequired === 1500 ? 10 : 5))}% of hours`, Number(d.supervisionPct || 0).toFixed(1) + ' %')}
+            {badge(d.restrictedMet, 'Unrestricted activities ≥ 60% of total', Number(100 - (d.restrictedPct || 0)).toFixed(1) + ' %')}
+            {badge(d.contactsMet, 'Supervision contacts this month', `${d.supervisionContacts} of ${d.contactsRequired || '—'} required`)}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: d.monthlyObservationMet ? 'var(--spruce)' : 'var(--amber)', flexShrink: 0 }} />
@@ -146,7 +254,7 @@ export default function CompliancePage() {
               {[['Unrestricted', d.unrestricted], ['Restricted', d.restricted], ['Supervised', d.supervisedHours], ['Independent', d.independentHours], ['Total', d.totalHours]].map(([label, val]) => (
                 <div key={String(label)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: label !== 'Total' ? '1px solid var(--border)' : 'none' }}>
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>{label}</span>
-                  <span style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: label === 'Total' ? 600 : 500, color: 'var(--ink)' }}>{Number(val||0).toFixed(1)}</span>
+                  <span style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: label === 'Total' ? 600 : 500, color: 'var(--ink)' }}>{Number(val || 0).toFixed(1)}</span>
                 </div>
               ))}
             </div>
@@ -154,15 +262,15 @@ export default function CompliancePage() {
               <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>Hours Pace</p>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{Number(d.totalHours||0).toFixed(0)} / 2,000 hrs</span>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{((d.totalHours/2000)*100).toFixed(1)}%</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{Number(d.totalHours || 0).toFixed(0)} / {totalRequired.toLocaleString()} hrs</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{((d.totalHours / totalRequired) * 100).toFixed(1)}%</span>
                 </div>
                 <div style={{ height: 8, background: 'var(--border)', borderRadius: 99, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: `${Math.min((d.totalHours/2000)*100, 100)}%` }} />
+                  <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: `${Math.min((d.totalHours / totalRequired) * 100, 100)}%` }} />
                 </div>
               </div>
               {d.projectedCompletionDate === 'complete' ? (
-                <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--spruce)' }}>✓ 2,000 hours complete!</p>
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--spruce)' }}>✓ {totalRequired.toLocaleString()} hours complete!</p>
               ) : d.projectedCompletionDate ? (
                 <>
                   <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Projected completion</p>
@@ -171,6 +279,12 @@ export default function CompliancePage() {
                 </>
               ) : (
                 <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>Log more hours to see projection</p>
+              )}
+              {d.fieldworkDeadline && (
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                  5-year fieldwork deadline: {new Date(d.fieldworkDeadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {d.fieldworkStartDateSource === 'inferred_from_earliest_entry' && ' (estimated)'}
+                </p>
               )}
             </div>
           </div>

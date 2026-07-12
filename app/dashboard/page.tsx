@@ -88,8 +88,8 @@ export default function DashboardPage() {
         {statCard('Supervised', d ? Number(d.supervisedHours||0).toFixed(1) + ' hrs' : '—', d ? `${Number(d.supervisionPct||0).toFixed(1)}% of total` : undefined, d?.supervisionMet ? 'var(--spruce)' : d ? 'var(--amber)' : undefined)}
         {statCard('Independent', d ? Number(d.independentHours||0).toFixed(1) + ' hrs' : '—', d ? `${d.totalHours > 0 ? (100 - d.supervisionPct).toFixed(1) : 0}% of total` : undefined)}
         {statCard('Restricted %', d ? Number(d.restrictedPct||0).toFixed(1) + '%' : '—', d?.restrictedMet ? 'Within 50% limit' : 'Over limit', d?.restrictedMet ? 'var(--spruce)' : d ? 'var(--amber)' : undefined)}
-        {statCard('Contacts This Month', d ? String(d.supervisionContacts || 0) : '—', d?.supervisionContacts >= 2 ? 'Minimum met' : 'Min. 2 required', d?.supervisionContacts >= 2 ? 'var(--spruce)' : d ? 'var(--amber)' : undefined)}
-        {statCard('Projected Completion', d?.projectedCompletionDate === 'complete' ? 'Done ✓' : d?.projectedCompletionDate ? new Date(d.projectedCompletionDate + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—' || '—', 'at current pace', d?.projectedCompletionDate === 'complete' ? 'var(--spruce)' : undefined)}
+        {statCard('Contacts This Month', d ? String(d.supervisionContacts || 0) : '—', d ? `${d.contactsMet ? 'Minimum met' : `Min. ${d.contactsRequired ?? '—'} required`}` : undefined, d?.contactsMet ? 'var(--spruce)' : d ? 'var(--amber)' : undefined)}
+        {statCard('Projected Completion', d?.projectedCompletionDate === 'complete' ? 'Done ✓' : d?.projectedCompletionDate ? new Date(d.projectedCompletionDate + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—', 'at current pace', d?.projectedCompletionDate === 'complete' ? 'var(--spruce)' : undefined)}
       </div>
 
       {/* BACB Requirements + Hours pace */}
@@ -98,7 +98,7 @@ export default function DashboardPage() {
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>BACB Requirements</p>
           {reqRow(track === 'concentrated' ? 'Supervision ≥ 10%' : 'Supervision ≥ 5%', d?.supervisionMet, d ? Number(d.supervisionPct||0).toFixed(1) + '%' : '—')}
           {reqRow('Restricted ≤ 50%', d?.restrictedMet, d ? Number(d.restrictedPct||0).toFixed(1) + '%' : '—')}
-          {reqRow('Supervision contacts', d ? d.supervisionContacts >= 2 : undefined, d ? `${d.supervisionContacts} this month` : '—')}
+          {reqRow('Supervision contacts', d ? d.contactsMet : undefined, d ? `${d.supervisionContacts} of ${d.contactsRequired ?? '—'} this month` : '—')}
           {reqRow('Monthly observation', d?.monthlyObservationMet, d?.monthlyObservationMet ? 'Completed' : 'Not yet', true)}
         </div>
 

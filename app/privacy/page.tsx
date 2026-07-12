@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export const metadata = {
   title: 'Privacy Policy — Supervisd',
   description: 'How Supervisd collects, uses, and protects your information.',
@@ -7,13 +9,13 @@ export default function PrivacyPage() {
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '64px 24px 96px' }}>
-        <a href="/" style={{ fontSize: 14, color: 'var(--spruce)', textDecoration: 'none', fontWeight: 600 }}>&larr; Back to Supervisd</a>
+        <Link href="/" style={{ fontSize: 14, color: 'var(--spruce)', textDecoration: 'none', fontWeight: 600 }}>&larr; Back to Supervisd</Link>
 
         <h1 style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 800, margin: '24px 0 8px', letterSpacing: '-.01em' }}>Privacy Policy</h1>
         <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 40 }}>Last updated: June 19, 2026</p>
 
         <div style={{ fontSize: 16, lineHeight: 1.75, color: 'var(--ink)' }}>
-          <p>Supervisd ("Supervisd," "we," "us," or "our") provides a fieldwork hour tracking and BACB compliance tool for BCBA trainees, RBTs, and supervising BCBAs. This Privacy Policy explains what information we collect, how we use it, and the choices you have.</p>
+          <p>Supervisd (&quot;Supervisd,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) provides a fieldwork hour tracking and BACB compliance tool for BCBA trainees, RBTs, and supervising BCBAs. This Privacy Policy explains what information we collect, how we use it, and the choices you have.</p>
           <p>Supervisd is operated by an individual (Arian Perez) and is not currently affiliated with a separate legal entity.</p>
 
           <h2 style={sectionHeading}>1. What we collect</h2>
@@ -27,7 +29,7 @@ export default function PrivacyPage() {
           <h2 style={sectionHeading}>2. How we use your information</h2>
           <p>We use the information we collect to:</p>
           <ul style={listStyle}>
-            <li>Provide and maintain the Supervisd service, including compliance calculations and the "Ask Supervisd" assistant</li>
+            <li>Provide and maintain the Supervisd service, including compliance calculations and the &quot;Ask Supervisd&quot; assistant</li>
             <li>Process subscription payments and manage your account</li>
             <li>Send you service-related communications, such as billing receipts or account notices</li>
             <li>Respond to support requests</li>
@@ -50,7 +52,7 @@ export default function PrivacyPage() {
           <p>We do not share your personal information with third parties except:</p>
           <ul style={listStyle}>
             <li>With the service providers listed above, as necessary to operate Supervisd</li>
-            <li>If you are an RBT linked to a supervising BCBA's roster, your compliance status and hours summary may be visible to that supervisor, consistent with the purpose of the product</li>
+            <li>If you are an RBT linked to a supervising BCBA&apos;s roster, your compliance status and hours summary may be visible to that supervisor, consistent with the purpose of the product</li>
             <li>If required by law, subpoena, or other legal process</li>
             <li>In connection with a merger, acquisition, or sale of assets, in which case we will make reasonable efforts to notify you</li>
           </ul>
@@ -64,7 +66,7 @@ export default function PrivacyPage() {
           <h2 style={sectionHeading}>7. Your choices</h2>
           <p>You can access, update, or correct most of your account and fieldwork information directly within the Supervisd dashboard. You may request a copy of your data or deletion of your account by contacting us.</p>
 
-          <h2 style={sectionHeading}>8. Children's privacy</h2>
+          <h2 style={sectionHeading}>8. Children&apos;s privacy</h2>
           <p>Supervisd is intended for use by adults pursuing BCBA or RBT certification and is not directed to children under 18. We do not knowingly collect information from children.</p>
 
           <h2 style={sectionHeading}>9. Contact us</h2>
@@ -72,7 +74,7 @@ export default function PrivacyPage() {
           <p><strong><a href="mailto:PLACEHOLDER_EMAIL" style={{ color: 'var(--spruce)' }}>PLACEHOLDER_EMAIL</a></strong></p>
 
           <h2 style={sectionHeading}>10. Changes to this policy</h2>
-          <p>We may update this Privacy Policy from time to time. If we make material changes, we will notify you by email or through a notice on the Supervisd dashboard. The "Last updated" date at the top of this page reflects the most recent revision.</p>
+          <p>We may update this Privacy Policy from time to time. If we make material changes, we will notify you by email or through a notice on the Supervisd dashboard. The &quot;Last updated&quot; date at the top of this page reflects the most recent revision.</p>
         </div>
       </div>
     </div>

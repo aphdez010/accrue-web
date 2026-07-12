@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function LandingPage() {
   const [role, setRole] = useState<'trainee' | 'bcba'>('trainee');
@@ -103,7 +104,7 @@ export default function LandingPage() {
               <a href="#how-it-works" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>How it works</a>
               <a href="#features" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Features</a>
               <a href="#pricing" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Pricing</a>
-              <a href="/sign-in?redirect_url=/dashboard" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Sign in</a>
+              <Link href="/sign-in?redirect_url=/dashboard" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Sign in</Link>
               <button onClick={handleGetStarted} disabled={checkoutLoading} style={{ background: 'var(--spruce)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', fontSize: 14, fontWeight: 600, padding: '10px 18px', borderRadius: 10 }}>{checkoutLoading ? 'Loading...' : 'Get started'}</button>
             </nav>
           )}
@@ -113,7 +114,7 @@ export default function LandingPage() {
             <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>How it works</a>
             <a href="#features" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Features</a>
             <a href="#pricing" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Pricing</a>
-            <a href="/sign-in?redirect_url=/dashboard" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Sign in</a>
+            <Link href="/sign-in?redirect_url=/dashboard" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Sign in</Link>
           </div>
         )}
       </header>
@@ -130,7 +131,7 @@ export default function LandingPage() {
           </div>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 30 : 46, fontWeight: 800, lineHeight: 1.08, letterSpacing: '-.02em', margin: '0 0 18px', color: '#fff' }}>
             {role === 'trainee'
-              ? <>Know exactly when you'll finish <span style={{ color: 'var(--sky-dim)' }}>before your supervisor has to ask.</span></>
+              ? <>Know exactly when you&apos;ll finish <span style={{ color: 'var(--sky-dim)' }}>before your supervisor has to ask.</span></>
               : <>Catch a ratio violation <span style={{ color: 'var(--sky-dim)' }}>before it becomes an audit problem.</span></>}
           </h1>
           <p style={{ fontSize: 17, lineHeight: 1.6, color: 'rgba(255,255,255,.82)', maxWidth: 460, margin: '0 0 28px' }}>
@@ -142,7 +143,7 @@ export default function LandingPage() {
             <button onClick={handleGetStarted} disabled={checkoutLoading} style={{ background: 'var(--sky)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', fontSize: 15, fontWeight: 600, padding: '14px 26px', borderRadius: 10, boxShadow: '0 8px 20px rgba(45,143,214,.35)' }}>{checkoutLoading ? 'Loading...' : 'Start tracking'}</button>
             <a href="#pricing" style={{ color: '#fff', textDecoration: 'none', fontSize: 15, fontWeight: 600, padding: '14px 26px', borderRadius: 10, border: '1px solid rgba(255,255,255,.3)' }}>See pricing</a>
           </div>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', margin: '0 0 24px' }}>Every hour you don't track correctly today is an hour you'll have to reconstruct from memory later.</p>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', margin: '0 0 24px' }}>Every hour you don&apos;t track correctly today is an hour you&apos;ll have to reconstruct from memory later.</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 99, padding: '6px 14px' }}>Built by a working BCBA</div>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 99, padding: '6px 14px' }}>BACB Handbook accurate</div>
@@ -235,7 +236,7 @@ export default function LandingPage() {
               <div style={{ order: isMobile ? 1 : 2 }}>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--spruce)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 10 }}>Step 2 — monthly review</div>
                 <h3 style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 800, marginBottom: 14, letterSpacing: '-.01em' }}>Walk into supervision with proof, not promises.</h3>
-                <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--muted)' }}>Each BACB requirement gets its own pass/fail check, every month — supervision percentage, restricted ceiling, contact minimums, observation requirements. When you're ready, export a signed PDF in one click. No scrambling through old emails when BACB asks for documentation.</p>
+                <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--muted)' }}>Each BACB requirement gets its own pass/fail check, every month — supervision percentage, restricted ceiling, contact minimums, observation requirements. When you&apos;re ready, export a signed PDF in one click. No scrambling through old emails when BACB asks for documentation.</p>
               </div>
             </div>
           </div>
@@ -258,7 +259,7 @@ export default function LandingPage() {
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>The problem</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 24 : 30, fontWeight: 800, marginBottom: 18, letterSpacing: '-.01em' }}>A missed row in a spreadsheet costs you three months.</h2>
-            <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--muted)', marginBottom: 16 }}>BCBA certification requires 2,000 supervised fieldwork hours (or 1,500 for the concentrated pathway), with at least 5% of those hours under direct supervision and no more than 50% coming from restricted activities. Those are simple rules on paper — until you're three spreadsheet tabs deep, six months in, and a wrong formula has quietly thrown off your restricted percentage.</p>
+            <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--muted)', marginBottom: 16 }}>BCBA certification requires 2,000 supervised fieldwork hours (or 1,500 for the concentrated pathway), with at least 5% of those hours under direct supervision and no more than 50% coming from restricted activities. Those are simple rules on paper — until you&apos;re three spreadsheet tabs deep, six months in, and a wrong formula has quietly thrown off your restricted percentage.</p>
             <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>And when BACB asks for documentation, you want a signed PDF ready to go — not a scramble through old emails and texts trying to reconstruct what actually happened in March.</p>
           </div>
         </div>
@@ -270,7 +271,7 @@ export default function LandingPage() {
             <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>The outcome</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 24 : 30, fontWeight: 800, marginBottom: 18, letterSpacing: '-.01em' }}>Walk into supervision knowing exactly where you stand.</h2>
             <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--muted)', marginBottom: 16 }}>Every hour you log gets checked against the real BACB handbook rules in real time. No more mental math during your session, no more end-of-month panic — just a clear number and a clear date.</p>
-            <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>That's an hour back every week you'd have spent untangling a spreadsheet — time you can spend actually working with your client.</p>
+            <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>That&apos;s an hour back every week you&apos;d have spent untangling a spreadsheet — time you can spend actually working with your client.</p>
           </div>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', order: isMobile ? 1 : 2 }}>
             <img src="/images/outcome.png" alt="" style={{ width: '100%', display: 'block', height: isMobile ? 240 : 340, objectFit: 'cover' }} />
@@ -281,15 +282,15 @@ export default function LandingPage() {
       <section style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: isMobile ? '32px 20px' : '40px 24px', display: 'flex', gap: 40, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
           <div style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 17, color: 'var(--spruce)' }}>★★★★★</div>
-          <div style={{ fontSize: 14, color: 'var(--muted)', maxWidth: 360 }}>"I finally stopped doing the math myself. <span style={{ color: 'var(--ink)', fontWeight: 600 }}>It just tells me.</span>" — BCBA trainee</div>
-          <div style={{ fontSize: 14, color: 'var(--muted)', maxWidth: 360 }}>"Catching a ratio issue before it became an audit problem <span style={{ color: 'var(--ink)', fontWeight: 600 }}>saved my whole quarter.</span>" — Supervising BCBA</div>
+          <div style={{ fontSize: 14, color: 'var(--muted)', maxWidth: 360 }}>&quot;I finally stopped doing the math myself. <span style={{ color: 'var(--ink)', fontWeight: 600 }}>It just tells me.</span>&quot; — BCBA trainee</div>
+          <div style={{ fontSize: 14, color: 'var(--muted)', maxWidth: 360 }}>&quot;Catching a ratio issue before it became an audit problem <span style={{ color: 'var(--ink)', fontWeight: 600 }}>saved my whole quarter.</span>&quot; — Supervising BCBA</div>
         </div>
       </section>
 
       <section id="features" style={{ maxWidth: 1180, margin: '0 auto', padding: isMobile ? '24px 20px 48px' : '64px 24px' }}>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Everything in one place</div>
         <h2 style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 24 : 30, fontWeight: 800, margin: '0 0 12px', letterSpacing: '-.01em' }}>Built around the BACB handbook, not a generic tracker.</h2>
-        <p style={{ fontSize: 16, color: 'var(--muted)', maxWidth: 620, margin: '0 0 36px' }}>Every feature exists because a real BACB rule required it. Here's everything that's already built and live — not a roadmap, the actual product.</p>
+        <p style={{ fontSize: 16, color: 'var(--muted)', maxWidth: 620, margin: '0 0 36px' }}>Every feature exists because a real BACB rule required it. Here&apos;s everything that&apos;s already built and live — not a roadmap, the actual product.</p>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 18 }}>
           {features.map(f => (
             <div key={f.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 22, boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
@@ -326,7 +327,7 @@ export default function LandingPage() {
 
       <section style={{ background: 'var(--ink)', padding: isMobile ? '48px 20px' : '64px 24px', textAlign: 'center' }}>
         <h2 style={{ fontFamily: 'var(--display)', color: '#fff', fontSize: isMobile ? 24 : 30, fontWeight: 800, margin: '0 0 14px' }}>Your hours are already accruing.</h2>
-        <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 16, margin: '0 0 8px' }}>Every week you track them in a spreadsheet is a week you're trusting your own math.</p>
+        <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 16, margin: '0 0 8px' }}>Every week you track them in a spreadsheet is a week you&apos;re trusting your own math.</p>
         <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 16, margin: '0 0 28px' }}>Start tracking them correctly today.</p>
         <button onClick={handleGetStarted} disabled={checkoutLoading} style={{ background: 'var(--spruce)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', fontWeight: 600, fontSize: 15, padding: '14px 30px', borderRadius: 10 }}>{checkoutLoading ? 'Loading...' : 'Start tracking'}</button>
       </section>
@@ -345,8 +346,8 @@ export default function LandingPage() {
               <a href="#how-it-works" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>How it works</a>
               <a href="#features" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>Features</a>
               <a href="#pricing" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>Pricing</a>
-              <a href="/sign-in?redirect_url=/dashboard" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>Sign in</a>
-              <a href="/sign-up?redirect_url=/dashboard" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>Get started</a>
+              <Link href="/sign-in?redirect_url=/dashboard" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>Sign in</Link>
+              <Link href="/sign-up?redirect_url=/dashboard" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>Get started</Link>
             </div>
           </div>
 

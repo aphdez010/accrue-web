@@ -103,6 +103,7 @@ export default function FieldworkPage() {
     setType(e.experience_type || 'Unrestricted Hours');
     setEntrySyncType(e.entry_sync_type || 'Synchronized');
     setSupervised(!!e.supervised);
+    setSupervisorName(e.supervisor_name || '');
     setSupFormat(e.supervision_format || 'In person');
     setSupervisionGroupType(e.supervision_group_type || 'Individual');
     setSupervisorPresent(!!e.supervisor_present);
@@ -131,6 +132,7 @@ export default function FieldworkPage() {
     setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
     setSupervised(false); setMonthlyObs(false);
     setObservationMinutes('');
+    setSupervisorName('');
     setEntryFieldworkType(track);
   }
 
@@ -165,6 +167,7 @@ export default function FieldworkPage() {
         observation_minutes: monthlyObs && observationMinutes ? parseInt(observationMinutes) : null,
         entry_sync_type: entrySyncType,
         supervisor_present: supervisorPresent,
+        supervisor_name: supervised ? (supervisorName || null) : null,
         supervision_group_type: supervised ? supervisionGroupType : null,
         fieldwork_type: entryFieldworkType,
       };
@@ -177,6 +180,7 @@ export default function FieldworkPage() {
       setHours(''); setStartTime(''); setEndTime(''); setNotes('');
       setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
       setSupervised(false); setMonthlyObs(false); setObservationMinutes('');
+      setSupervisorName('');
       setOk(true); setTimeout(() => setOk(false), 3000);
       load();
     } catch (e: any) { setErr(e.message || 'Error'); }

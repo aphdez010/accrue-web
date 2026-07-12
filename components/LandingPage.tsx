@@ -50,15 +50,21 @@ export default function LandingPage() {
     ? monthNames[projectedDate.getMonth()] + ' ' + projectedDate.getFullYear()
     : 'N/A';
 
+  const steps = [
+    { n: '01', title: 'Log an hour in seconds', desc: 'Date, hours, task list area, setting. That\u2019s it \u2014 no formulas, no separate spreadsheet tabs to keep in sync.' },
+    { n: '02', title: 'See the compliance math instantly', desc: 'The second you save it, your entry is checked against the real BACB rule set \u2014 supervision percentage, restricted ceiling, contact minimums.' },
+    { n: '03', title: 'Export signed proof on demand', desc: 'One click generates a signed PDF for that month or your full record \u2014 ready before anyone asks for it.' },
+  ];
+
   const features = [
-    { title: 'Fieldwork logging', letter: 'F', color: 'spruce', desc: 'Log restricted, unrestricted, and supervised hours with start/end times, task list area, and setting — in under 30 seconds per entry.' },
-    { title: 'Compliance checks', letter: 'C', color: 'sky', desc: 'Every BACB rule — 5% supervision, 50% restricted ceiling, monthly contacts, observation requirements — checked automatically against your real numbers.' },
-    { title: 'Signed PDF export', letter: 'P', color: 'amber', desc: 'One-click monthly or full-record export with digital signature capture — ready the moment BACB or your supervisor asks.' },
-    { title: 'Ask Supervisd', letter: 'A', color: 'spruce', desc: 'Ask a real BACB handbook question — "is training a caregiver restricted or unrestricted?" — and get a straight, cited answer.' },
-    { title: 'Roster tracking', letter: 'R', color: 'sky', desc: "Supervising BCBAs see every RBT's compliance status in one table, instead of chasing down spreadsheets from each trainee." },
-    { title: 'Document vault', letter: 'D', color: 'amber', desc: 'Signed supervision contracts, CEU certificates, and exported records, stored and searchable in one place.' },
-    { title: 'Spreadsheet import', letter: 'S', color: 'spruce', desc: "Bring your existing hours in from a CSV without manually retyping every row you've already logged." },
-    { title: 'CEU tracking', letter: 'CE', color: 'sky', desc: 'Keep continuing education certificates organized and ready before renewal season catches you off guard.' },
+    { title: 'Fieldwork logging', tag: 'LOG', color: 'spruce', desc: 'Log restricted, unrestricted, and supervised hours with start/end times, task list area, and setting — in under 30 seconds per entry.' },
+    { title: 'Compliance checks', tag: 'CHK', color: 'sky', desc: 'Every BACB rule — 5% supervision, 50% restricted ceiling, monthly contacts, observation requirements — checked automatically against your real numbers.' },
+    { title: 'Signed PDF export', tag: 'PDF', color: 'amber', desc: 'One-click monthly or full-record export with digital signature capture — ready the moment BACB or your supervisor asks.' },
+    { title: 'Ask Supervisd', tag: 'ASK', color: 'spruce', desc: 'Ask a real BACB handbook question — "is training a caregiver restricted or unrestricted?" — and get a straight, cited answer.' },
+    { title: 'Roster tracking', tag: 'ROS', color: 'sky', desc: "Supervising BCBAs see every RBT's compliance status in one table, instead of chasing down spreadsheets from each trainee." },
+    { title: 'Document vault', tag: 'DOC', color: 'amber', desc: 'Signed supervision contracts, CEU certificates, and exported records, stored and searchable in one place.' },
+    { title: 'Spreadsheet import', tag: 'CSV', color: 'spruce', desc: "Bring your existing hours in from a CSV without manually retyping every row you've already logged." },
+    { title: 'CEU tracking', tag: 'CEU', color: 'sky', desc: 'Keep continuing education certificates organized and ready before renewal season catches you off guard.' },
   ];
 
   const included = [
@@ -94,7 +100,7 @@ export default function LandingPage() {
             </div>
           ) : (
             <nav style={{ display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
-              <a href="#walkthrough" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>How it works</a>
+              <a href="#how-it-works" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>How it works</a>
               <a href="#features" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Features</a>
               <a href="#pricing" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Pricing</a>
               <a href="/sign-in?redirect_url=/dashboard" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Sign in</a>
@@ -104,7 +110,7 @@ export default function LandingPage() {
         </div>
         {isMobile && mobileMenuOpen && (
           <div style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <a href="#walkthrough" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>How it works</a>
+            <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>How it works</a>
             <a href="#features" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Features</a>
             <a href="#pricing" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Pricing</a>
             <a href="/sign-in?redirect_url=/dashboard" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--ink)', textDecoration: 'none', fontSize: 15, fontWeight: 500 }}>Sign in</a>
@@ -124,27 +130,31 @@ export default function LandingPage() {
           </div>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 30 : 46, fontWeight: 800, lineHeight: 1.08, letterSpacing: '-.02em', margin: '0 0 18px', color: '#fff' }}>
             {role === 'trainee'
-              ? <>Stop guessing. <span style={{ color: 'var(--sky-dim)' }}>Know exactly</span> when you'll finish.</>
-              : <>Stop chasing spreadsheets. <span style={{ color: 'var(--sky-dim)' }}>See your whole roster</span> at a glance.</>}
+              ? <>Know exactly when you'll finish <span style={{ color: 'var(--sky-dim)' }}>before your supervisor has to ask.</span></>
+              : <>Catch a ratio violation <span style={{ color: 'var(--sky-dim)' }}>before it becomes an audit problem.</span></>}
           </h1>
           <p style={{ fontSize: 17, lineHeight: 1.6, color: 'rgba(255,255,255,.82)', maxWidth: 460, margin: '0 0 28px' }}>
             {role === 'trainee'
-              ? "Most BCBA trainees track 2,000 hours in a spreadsheet and find out they're behind three months too late. Supervisd does the math every day, so you always know where you stand."
-              : "Track every supervisee's hours, catch a ratio violation before it becomes an audit problem, and sign forms without a printer."}
+              ? "Most BCBA trainees track 2,000 hours in a spreadsheet and don't find out they're behind until it's too late to fix. Supervisd checks your numbers against the real BACB rules the moment you log an hour."
+              : "Track every supervisee's hours in one table, catch a compliance issue while it's still fixable, and sign off without touching a printer."}
           </p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 28 }}>
-            <button onClick={handleGetStarted} disabled={checkoutLoading} style={{ background: 'var(--sky)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', fontSize: 15, fontWeight: 600, padding: '14px 26px', borderRadius: 10, boxShadow: '0 8px 20px rgba(45,143,214,.35)' }}>{checkoutLoading ? 'Loading...' : 'Start tracking free'}</button>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+            <button onClick={handleGetStarted} disabled={checkoutLoading} style={{ background: 'var(--sky)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', fontSize: 15, fontWeight: 600, padding: '14px 26px', borderRadius: 10, boxShadow: '0 8px 20px rgba(45,143,214,.35)' }}>{checkoutLoading ? 'Loading...' : 'Start tracking'}</button>
             <a href="#pricing" style={{ color: '#fff', textDecoration: 'none', fontSize: 15, fontWeight: 600, padding: '14px 26px', borderRadius: 10, border: '1px solid rgba(255,255,255,.3)' }}>See pricing</a>
           </div>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', margin: '0 0 24px' }}>Every hour you don't track correctly today is an hour you'll have to reconstruct from memory later.</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 99, padding: '6px 14px' }}>No credit card to start</div>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 99, padding: '6px 14px' }}>Built by a working BCBA</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 99, padding: '6px 14px' }}>BACB Handbook accurate</div>
           </div>
         </div>
 
         <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 28, boxShadow: '0 24px 60px rgba(0,0,0,.25), 0 4px 12px rgba(0,0,0,.1)', marginTop: isMobile ? 0 : 8 }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Will I make it?</div>
-          <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Your fieldwork pace</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--spruce)' }} />
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Live calculation</div>
+          </div>
+          <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Will I make it?</div>
 
           <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Hours logged so far</label>
           <input type="number" min={0} max={2000} value={hoursLogged} onChange={e => setHoursLogged(Number(e.target.value))} style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 14, marginBottom: 16, color: 'var(--ink)', background: 'var(--bg)' }} />
@@ -182,7 +192,23 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="walkthrough" style={{ background: 'var(--sand)' }}>
+      <section id="how-it-works" style={{ maxWidth: 1180, margin: '0 auto', padding: isMobile ? '48px 20px 8px' : '72px 24px 16px' }}>
+        <div style={{ textAlign: 'center', maxWidth: 640, margin: '0 auto 44px' }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>How it works</div>
+          <h2 style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 24 : 32, fontWeight: 800, marginBottom: 14, letterSpacing: '-.01em' }}>Three steps. No spreadsheet required.</h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 24 : 28 }}>
+          {steps.map(s => (
+            <div key={s.n} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 26 }}>
+              <div style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 800, color: 'var(--spruce)', opacity: 0.5, marginBottom: 12 }}>{s.n}</div>
+              <div style={{ fontFamily: 'var(--display)', fontSize: 17, fontWeight: 700, marginBottom: 10 }}>{s.title}</div>
+              <div style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.6 }}>{s.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="walkthrough" style={{ background: 'var(--surface2)' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: isMobile ? '48px 20px' : '72px 24px' }}>
           <div style={{ textAlign: 'center', maxWidth: 640, margin: '0 auto 48px' }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>See it in action</div>
@@ -224,7 +250,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-      <section style={{ background: 'var(--sand)' }}>
+      <section style={{ background: 'var(--surface2)' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: isMobile ? '0 20px 48px' : '0 24px 72px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 32 : 56, alignItems: 'center' }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
             <img src="/images/pain.png" alt="" style={{ width: '100%', display: 'block', height: isMobile ? 240 : 340, objectFit: 'cover' }} />
@@ -266,10 +292,13 @@ export default function LandingPage() {
         <p style={{ fontSize: 16, color: 'var(--muted)', maxWidth: 620, margin: '0 0 36px' }}>Every feature exists because a real BACB rule required it. Here's everything that's already built and live — not a roadmap, the actual product.</p>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 18 }}>
           {features.map(f => (
-            <div key={f.title} style={{ background: 'var(--surface)', borderRadius: 14, padding: 22, boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: `var(--${f.color}-dim)`, color: `var(--${f.color})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15, fontFamily: 'var(--display)', marginBottom: 14 }}>{f.letter}</div>
-              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>{f.title}</div>
-              <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{f.desc}</div>
+            <div key={f.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 22, boxShadow: '0 2px 8px rgba(0,0,0,.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: `var(--${f.color})`, flexShrink: 0 }} />
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, letterSpacing: '.1em', color: `var(--${f.color})`, textTransform: 'uppercase' }}>{f.tag}</span>
+              </div>
+              <div style={{ fontFamily: 'var(--display)', fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{f.title}</div>
+              <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.55 }}>{f.desc}</div>
             </div>
           ))}
         </div>
@@ -282,8 +311,12 @@ export default function LandingPage() {
           <div style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 24 }}>Full BACB compliance tracking for RBTs and BCBAs.</div>
           <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', textAlign: 'left' }}>
             {included.map(item => (
-              <li key={item} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--border)', fontSize: 14 }}>
-                <span style={{ color: 'var(--spruce)' }}>✓</span>{item}
+              <li key={item} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '11px 0', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--spruce)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, color: 'var(--ink)' }}>{item}</span>
+                </div>
+                <span style={{ padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700, background: 'var(--spruce-dim)', color: 'var(--spruce)' }}>✓</span>
               </li>
             ))}
           </ul>
@@ -293,8 +326,9 @@ export default function LandingPage() {
 
       <section style={{ background: 'var(--ink)', padding: isMobile ? '48px 20px' : '64px 24px', textAlign: 'center' }}>
         <h2 style={{ fontFamily: 'var(--display)', color: '#fff', fontSize: isMobile ? 24 : 30, fontWeight: 800, margin: '0 0 14px' }}>Your hours are already accruing.</h2>
+        <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 16, margin: '0 0 8px' }}>Every week you track them in a spreadsheet is a week you're trusting your own math.</p>
         <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 16, margin: '0 0 28px' }}>Start tracking them correctly today.</p>
-        <button onClick={handleGetStarted} disabled={checkoutLoading} style={{ background: 'var(--spruce)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', fontWeight: 600, fontSize: 15, padding: '14px 30px', borderRadius: 10 }}>{checkoutLoading ? 'Loading...' : 'Start tracking free'}</button>
+        <button onClick={handleGetStarted} disabled={checkoutLoading} style={{ background: 'var(--spruce)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', fontWeight: 600, fontSize: 15, padding: '14px 30px', borderRadius: 10 }}>{checkoutLoading ? 'Loading...' : 'Start tracking'}</button>
       </section>
 
       <footer style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
@@ -308,6 +342,7 @@ export default function LandingPage() {
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 14 }}>Product</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <a href="#how-it-works" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>How it works</a>
               <a href="#features" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>Features</a>
               <a href="#pricing" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>Pricing</a>
               <a href="/sign-in?redirect_url=/dashboard" style={{ fontSize: 13, color: 'var(--muted)', textDecoration: 'none' }}>Sign in</a>

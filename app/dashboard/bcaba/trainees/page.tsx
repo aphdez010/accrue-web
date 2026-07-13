@@ -7,9 +7,19 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function pad(n: number) { return n < 10 ? '0' + n : String(n); }
 
 type Trainee = { id: number; full_name: string; fieldwork_type: string; target_hours: number };
+type Supervisor = {
+  id: number;
+  trainee_id: number;
+  supervisor_user_id: string | null;
+  supervisor_name: string;
+  bacb_account_id: string | null;
+  is_responsible_supervisor: boolean;
+  active: boolean;
+  relationship_status: string;
+};
 
 export default function SupervisorTraineesPage() {
-  const { get } = useApi();
+  const { get, post, patch } = useApi();
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -25,6 +35,15 @@ export default function SupervisorTraineesPage() {
   const [summary, setSummary] = useState<any>(null);
   const [compliance, setCompliance] = useState<any>(null);
   const [err, setErr] = useState('');
+
+  const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
+  const [loadingSupervisors, setLoadingSupervisors] = useState(false);
+  const [supervisorErr, setSupervisorErr] = useState('');
+  const [showAddSupervisor, setShowAddSupervisor] = useState(false);
+  const [newSupervisorName, setNewSupervisorName] = useState('');
+  const [newSupervisorBacbId, setNewSupervisorBacbId] = useState('');
+  const [addingSupervisor, setAddingSupervisor] = useState(false);
+  const [reassigningId, setReassigningId] = useState<number | null>(null);
 
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -50,6 +69,56 @@ export default function SupervisorTraineesPage() {
       setCompliance(r?.compliance || null);
     }).catch((e: any) => setErr(e.message || 'Could not load entries'));
   }, [selectedTraineeId, viewYear, viewMonth]);
+
+  function loadSupervisors() {
+    if (!selectedTraineeId) return;
+    setLoadingSupervisors(true);
+    setSupervisorErr('');
+    get('/bcaba/trainees/' + selectedTraineeId + '/supervisors').then((r: any) => {
+      setSupervisors(Array.isArray(r?.supervisors) ? r.supervisors : []);
+    }).catch((e: any) => setSupervisorErr(e.message || 'Could not load supervisors')).finally(() => setLoadingSupervisors(false));
+  }
+
+  useEffect(() => {
+    loadSupervisors();
+    setShowAddSupervisor(false);
+    setNewSupervisorName('');
+    setNewSupervisorBacbId('');
+  }, [selectedTraineeId]);
+
+  async function handleAddSupervisor() {
+    if (!selectedTraineeId || !newSupervisorName.trim()) return;
+    setAddingSupervisor(true);
+    setSupervisorErr('');
+    try {
+      await post('/bcaba/trainees/' + selectedTraineeId + '/supervisors', {
+        supervisorName: newSupervisorName.trim(),
+        bacbAccountId: newSupervisorBacbId.trim() || undefined,
+      });
+      setNewSupervisorName('');
+      setNewSupervisorBacbId('');
+      setShowAddSupervisor(false);
+      loadSupervisors();
+    } catch (e: any) {
+      setSupervisorErr(e.message || 'Failed to add supervisor');
+    } finally {
+      setAddingSupervisor(false);
+    }
+  }
+
+  async function handleMakeResponsible(supervisorId: number) {
+    if (!selectedTraineeId) return;
+    setReassigningId(supervisorId);
+    setSupervisorErr('');
+    try {
+      await patch('/bcaba/trainees/' + selectedTraineeId + '/supervisors/' + supervisorId + '/make-responsible', {});
+      loadSupervisors();
+    } catch (e: any) {
+      setSupervisorErr(e.message || 'Failed to reassign Responsible Supervisor');
+    } finally {
+      setReassigningId(null);
+    }
+  }
 
   const unrestrictedPct = summary ? Math.round((summary.unrestrictedPct || 0) * 100) : 0;
 
@@ -124,6 +193,91 @@ export default function SupervisorTraineesPage() {
               <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--amber)', margin: 0 }}>{err}</p>
             </div>
           )}
+
+          {/* Supervisors panel */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '24px 28px', marginBottom: 24, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap' as const, gap: 8 }}>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>Supervisors</p>
+              <button
+                onClick={() => setShowAddSupervisor(s => !s)}
+                style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink)' }}
+              >
+                {showAddSupervisor ? 'Cancel' : '+ Add supervisor'}
+              </button>
+            </div>
+
+            {supervisorErr && (
+              <div style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid var(--amber)', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--amber)', margin: 0 }}>{supervisorErr}</p>
+              </div>
+            )}
+
+            {showAddSupervisor && (
+              <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '16px 18px', marginBottom: 16, display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Supervisor Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Dr. Jones"
+                    value={newSupervisorName}
+                    onChange={e => setNewSupervisorName(e.target.value)}
+                    style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>BACB ID (optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 1-23-45678"
+                    value={newSupervisorBacbId}
+                    onChange={e => setNewSupervisorBacbId(e.target.value)}
+                    style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const }}
+                  />
+                </div>
+                <button
+                  onClick={handleAddSupervisor}
+                  disabled={addingSupervisor || !newSupervisorName.trim()}
+                  style={{ background: addingSupervisor || !newSupervisorName.trim() ? 'var(--muted)' : 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontFamily: 'var(--mono)', fontSize: 12, cursor: addingSupervisor || !newSupervisorName.trim() ? 'not-allowed' : 'pointer', alignSelf: 'flex-start' }}
+                >
+                  {addingSupervisor ? 'Adding...' : 'Add supervisor'}
+                </button>
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
+                  Only the current Responsible Supervisor can add additional supervisors. New supervisors are added as contributing (not responsible) by default.
+                </p>
+              </div>
+            )}
+
+            {loadingSupervisors ? (
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>Loading supervisors...</p>
+            ) : supervisors.length === 0 ? (
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>No supervisor records found for this trainee.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+                {supervisors.map(s => (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 10, padding: '12px 14px', borderRadius: 8, background: s.is_responsible_supervisor ? 'rgba(26,122,80,0.06)' : 'var(--bg)', border: '1px solid ' + (s.is_responsible_supervisor ? 'rgba(26,122,80,0.2)' : 'var(--border)') }}>
+                    <div>
+                      <p style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 500, color: 'var(--ink)', margin: '0 0 2px' }}>{s.supervisor_name}</p>
+                      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: 0 }}>{s.bacb_account_id || 'No BACB ID on file'}</p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: s.is_responsible_supervisor ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: s.is_responsible_supervisor ? 'var(--spruce)' : 'var(--muted)' }}>
+                        {s.is_responsible_supervisor ? 'Responsible' : 'Contributing'}
+                      </span>
+                      {!s.is_responsible_supervisor && (
+                        <button
+                          onClick={() => handleMakeResponsible(s.id)}
+                          disabled={reassigningId === s.id}
+                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: reassigningId === s.id ? 'not-allowed' : 'pointer' }}
+                        >
+                          {reassigningId === s.id ? 'Updating...' : 'Make Responsible'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '24px 28px', marginBottom: 24, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap' as const, gap: 8 }}>

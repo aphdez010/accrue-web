@@ -40,6 +40,7 @@ type Supervisor = {
   contract_document_id: number | null;
   contract_file_name?: string | null;
   contract_file_url?: string | null;
+  supervisor_training_date: string | null;
 };
 
 export default function FieldworkPage() {
@@ -114,6 +115,10 @@ export default function FieldworkPage() {
   const [contractSignedDateFor, setContractSignedDateFor] = useState<Record<number, string>>({});
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
+  // Training date state, keyed by supervisor id
+  const [trainingDateFor, setTrainingDateFor] = useState<Record<number, string>>({});
+  const [savingTrainingFor, setSavingTrainingFor] = useState<number | null>(null);
+
   function loadSupervisors() {
     setLoadingSupervisors(true);
     setSupervisorErr('');
@@ -167,6 +172,21 @@ export default function FieldworkPage() {
       setSupervisorErr(e.message || 'Failed to attach contract');
     } finally {
       setContractUploadingFor(null);
+    }
+  }
+
+  async function handleSaveTrainingDate(supervisorId: number) {
+    const trainingDate = trainingDateFor[supervisorId];
+    if (!trainingDate) return;
+    setSavingTrainingFor(supervisorId);
+    setSupervisorErr('');
+    try {
+      await patch('/supervisors/' + supervisorId + '/training', { trainingDate });
+      loadSupervisors();
+    } catch (e: any) {
+      setSupervisorErr(e.message || 'Failed to save training date');
+    } finally {
+      setSavingTrainingFor(null);
     }
   }
 
@@ -359,6 +379,7 @@ export default function FieldworkPage() {
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
             {supervisors.map(s => {
               const hasContract = !!s.contract_document_id;
+              const hasTraining = !!s.supervisor_training_date;
               return (
                 <div key={s.id} style={{ padding: '12px 14px', borderRadius: 8, background: s.is_responsible ? 'rgba(26,122,80,0.06)' : 'var(--bg)', border: '1px solid ' + (s.is_responsible ? 'rgba(26,122,80,0.2)' : 'var(--border)') }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 10 }}>
@@ -420,6 +441,33 @@ export default function FieldworkPage() {
                         style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: contractUploadingFor === s.id ? 'not-allowed' : 'pointer' }}
                       >
                         {contractUploadingFor === s.id ? 'Uploading...' : hasContract ? 'Replace file' : 'Upload contract'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Training date status + save */}
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid ' + (s.is_responsible ? 'rgba(26,122,80,0.15)' : 'var(--border)'), display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8 }}>
+                    {hasTraining ? (
+                      <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(26,122,80,0.1)', color: 'var(--spruce)' }}>
+                        ✓ 8-hr training completed {new Date(s.supervisor_training_date!).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    ) : (
+                      <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(255,160,0,0.1)', color: 'var(--amber)' }}>! 8-hr Supervisor Training not on file</span>
+                    )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input
+                        type="date"
+                        value={trainingDateFor[s.id] || ''}
+                        onChange={e => setTrainingDateFor(prev => ({ ...prev, [s.id]: e.target.value }))}
+                        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)' }}
+                      />
+                      <button
+                        onClick={() => handleSaveTrainingDate(s.id)}
+                        disabled={savingTrainingFor === s.id || !trainingDateFor[s.id]}
+                        style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: savingTrainingFor === s.id || !trainingDateFor[s.id] ? 'not-allowed' : 'pointer' }}
+                      >
+                        {savingTrainingFor === s.id ? 'Saving...' : hasTraining ? 'Update date' : 'Save date'}
                       </button>
                     </div>
                   </div>

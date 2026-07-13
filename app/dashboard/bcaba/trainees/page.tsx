@@ -45,6 +45,16 @@ export default function SupervisorTraineesPage() {
   const [addingSupervisor, setAddingSupervisor] = useState(false);
   const [reassigningId, setReassigningId] = useState<number | null>(null);
 
+  const [showAddTrainee, setShowAddTrainee] = useState(false);
+  const [addingTrainee, setAddingTrainee] = useState(false);
+  const [addTraineeErr, setAddTraineeErr] = useState('');
+  const [newTraineeEmail, setNewTraineeEmail] = useState('');
+  const [newTraineeBacbId, setNewTraineeBacbId] = useState('');
+  const [newTraineePathway, setNewTraineePathway] = useState('standard');
+  const [newTraineeFieldworkType, setNewTraineeFieldworkType] = useState('supervised');
+  const [newTraineeStartDate, setNewTraineeStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [newTraineeTargetHours, setNewTraineeTargetHours] = useState('1300');
+
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -52,13 +62,16 @@ export default function SupervisorTraineesPage() {
   const monthYear = `${viewYear}-${pad(viewMonth + 1)}-01`;
   const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
-  useEffect(() => {
+  function loadTrainees() {
+    setLoadingTrainees(true);
     get('/bcaba/supervisor/trainees').then((r: any) => {
       const list = Array.isArray(r) ? r : [];
       setTrainees(list);
-      if (list.length > 0) setSelectedTraineeId(list[0].id);
+      if (list.length > 0 && !selectedTraineeId) setSelectedTraineeId(list[0].id);
     }).catch(() => {}).finally(() => setLoadingTrainees(false));
-  }, []);
+  }
+
+  useEffect(() => { loadTrainees(); }, []);
 
   useEffect(() => {
     if (!selectedTraineeId) return;
@@ -120,6 +133,40 @@ export default function SupervisorTraineesPage() {
     }
   }
 
+  function resetAddTraineeForm() {
+    setNewTraineeEmail('');
+    setNewTraineeBacbId('');
+    setNewTraineePathway('standard');
+    setNewTraineeFieldworkType('supervised');
+    setNewTraineeStartDate(new Date().toISOString().slice(0, 10));
+    setNewTraineeTargetHours('1300');
+    setAddTraineeErr('');
+  }
+
+  async function handleAddTrainee() {
+    if (!newTraineeEmail.trim()) return;
+    setAddingTrainee(true);
+    setAddTraineeErr('');
+    try {
+      const result: any = await post('/bcaba/trainees', {
+        traineeEmail: newTraineeEmail.trim(),
+        bacbAccountId: newTraineeBacbId.trim() || undefined,
+        pathway: newTraineePathway,
+        fieldworkType: newTraineeFieldworkType,
+        fieldworkStartDate: newTraineeStartDate,
+        targetHours: parseInt(newTraineeTargetHours, 10) || 1300,
+      });
+      resetAddTraineeForm();
+      setShowAddTrainee(false);
+      loadTrainees();
+      if (result?.trainee?.id) setSelectedTraineeId(result.trainee.id);
+    } catch (e: any) {
+      setAddTraineeErr(e.message || 'Failed to add trainee');
+    } finally {
+      setAddingTrainee(false);
+    }
+  }
+
   const unrestrictedPct = summary ? Math.round((summary.unrestrictedPct || 0) * 100) : 0;
 
   const hoursByDay = useMemo(() => {
@@ -164,16 +211,91 @@ export default function SupervisorTraineesPage() {
   const isCurrentMonthView = viewYear === today.getFullYear() && viewMonth === today.getMonth();
   const selectedTrainee = trainees.find(t => t.id === selectedTraineeId);
 
+  const fieldInp = { width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const };
+  const fieldLbl = { display: 'block' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, color: 'var(--muted)', marginBottom: 6 };
+
   return (
     <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 960, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
-      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>My Trainees</p>
-      <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 24px' }}>Trainee Fieldwork Calendar</h1>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' as const, marginBottom: 24 }}>
+        <div>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>My Trainees</p>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Trainee Fieldwork Calendar</h1>
+        </div>
+        <button
+          onClick={() => { setShowAddTrainee(s => !s); if (showAddTrainee) resetAddTraineeForm(); }}
+          style={{ background: showAddTrainee ? 'transparent' : 'var(--spruce)', color: showAddTrainee ? 'var(--ink)' : '#fff', border: showAddTrainee ? '1px solid var(--border)' : 'none', borderRadius: 8, padding: '10px 20px', fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer' }}
+        >
+          {showAddTrainee ? 'Cancel' : '+ Add Trainee'}
+        </button>
+      </div>
+
+      {showAddTrainee && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '24px 28px', marginBottom: 24 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>Add a Trainee</p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 20, lineHeight: 1.6 }}>
+            The trainee must already have a Supervisd account (they sign up like any other user first). Enter the email they used to register.
+          </p>
+
+          {addTraineeErr && (
+            <div style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid var(--amber)', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--amber)', margin: 0 }}>{addTraineeErr}</p>
+            </div>
+          )}
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={fieldLbl}>Trainee Email</label>
+            <input type="email" placeholder="trainee@example.com" value={newTraineeEmail} onChange={e => setNewTraineeEmail(e.target.value)} style={fieldInp} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div>
+              <label style={fieldLbl}>BACB ID (optional)</label>
+              <input type="text" placeholder="e.g. 1-23-45678" value={newTraineeBacbId} onChange={e => setNewTraineeBacbId(e.target.value)} style={fieldInp} />
+            </div>
+            <div>
+              <label style={fieldLbl}>Target Hours</label>
+              <input type="number" min="1" value={newTraineeTargetHours} onChange={e => setNewTraineeTargetHours(e.target.value)} style={fieldInp} />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div>
+              <label style={fieldLbl}>Pathway</label>
+              <select value={newTraineePathway} onChange={e => setNewTraineePathway(e.target.value)} style={{ ...fieldInp, cursor: 'pointer' }}>
+                <option value="standard">Standard</option>
+                <option value="practicum">Practicum</option>
+                <option value="intensive_practicum">Intensive Practicum</option>
+              </select>
+            </div>
+            <div>
+              <label style={fieldLbl}>Fieldwork Type</label>
+              <select value={newTraineeFieldworkType} onChange={e => setNewTraineeFieldworkType(e.target.value)} style={{ ...fieldInp, cursor: 'pointer' }}>
+                <option value="supervised">Supervised</option>
+                <option value="concentrated">Concentrated</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={fieldLbl}>Fieldwork Start Date</label>
+            <input type="date" value={newTraineeStartDate} onChange={e => setNewTraineeStartDate(e.target.value)} style={fieldInp} />
+          </div>
+
+          <button
+            onClick={handleAddTrainee}
+            disabled={addingTrainee || !newTraineeEmail.trim()}
+            style={{ background: addingTrainee || !newTraineeEmail.trim() ? 'var(--muted)' : 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '11px 24px', fontFamily: 'var(--mono)', fontSize: 12, cursor: addingTrainee || !newTraineeEmail.trim() ? 'not-allowed' : 'pointer' }}
+          >
+            {addingTrainee ? 'Adding...' : 'Add Trainee'}
+          </button>
+        </div>
+      )}
 
       {loadingTrainees ? (
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>Loading trainees...</p>
       ) : trainees.length === 0 ? (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px' }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>No trainees are currently assigned to you as supervisor.</p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>No trainees are currently assigned to you as supervisor. Click &quot;+ Add Trainee&quot; above to get started.</p>
         </div>
       ) : (
         <>

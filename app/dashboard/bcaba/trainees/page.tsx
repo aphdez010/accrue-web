@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../../context/api-context';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -16,10 +17,15 @@ type Supervisor = {
   is_responsible_supervisor: boolean;
   active: boolean;
   relationship_status: string;
+  contract_document_id: number | null;
+  contract_signed_date: string | null;
+  contract_file_name?: string | null;
+  contract_file_url?: string | null;
 };
 
 export default function SupervisorTraineesPage() {
   const { get, post, patch } = useApi();
+  const { getToken } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -54,6 +60,11 @@ export default function SupervisorTraineesPage() {
   const [newTraineeFieldworkType, setNewTraineeFieldworkType] = useState('supervised');
   const [newTraineeStartDate, setNewTraineeStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [newTraineeTargetHours, setNewTraineeTargetHours] = useState('1300');
+
+  // Contract upload state, keyed by supervisor id
+  const [contractUploadingFor, setContractUploadingFor] = useState<number | null>(null);
+  const [contractSignedDateFor, setContractSignedDateFor] = useState<Record<number, string>>({});
+  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -130,6 +141,40 @@ export default function SupervisorTraineesPage() {
       setSupervisorErr(e.message || 'Failed to reassign Responsible Supervisor');
     } finally {
       setReassigningId(null);
+    }
+  }
+
+  async function handleContractUpload(supervisorId: number, file: File) {
+    if (!selectedTraineeId) return;
+    setContractUploadingFor(supervisorId);
+    setSupervisorErr('');
+    try {
+      const token = await getToken();
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      const base = apiUrl.replace(/\/api$/, '');
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'supervision_contract');
+      const uploadRes = await fetch(`${base}/vault/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!uploadRes.ok) throw new Error('Upload failed');
+      const uploadData = await uploadRes.json();
+      const vaultDocumentId = uploadData?.document?.id;
+      if (!vaultDocumentId) throw new Error('Upload succeeded but no document id was returned');
+
+      await patch('/bcaba/trainees/' + selectedTraineeId + '/supervisors/' + supervisorId + '/contract', {
+        vaultDocumentId,
+        contractSignedDate: contractSignedDateFor[supervisorId] || undefined,
+      });
+      loadSupervisors();
+    } catch (e: any) {
+      setSupervisorErr(e.message || 'Failed to attach contract');
+    } finally {
+      setContractUploadingFor(null);
     }
   }
 
@@ -375,28 +420,77 @@ export default function SupervisorTraineesPage() {
               <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>No supervisor records found for this trainee.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
-                {supervisors.map(s => (
-                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 10, padding: '12px 14px', borderRadius: 8, background: s.is_responsible_supervisor ? 'rgba(26,122,80,0.06)' : 'var(--bg)', border: '1px solid ' + (s.is_responsible_supervisor ? 'rgba(26,122,80,0.2)' : 'var(--border)') }}>
-                    <div>
-                      <p style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 500, color: 'var(--ink)', margin: '0 0 2px' }}>{s.supervisor_name}</p>
-                      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: 0 }}>{s.bacb_account_id || 'No BACB ID on file'}</p>
+                {supervisors.map(s => {
+                  const hasContract = !!s.contract_document_id;
+                  return (
+                    <div key={s.id} style={{ padding: '12px 14px', borderRadius: 8, background: s.is_responsible_supervisor ? 'rgba(26,122,80,0.06)' : 'var(--bg)', border: '1px solid ' + (s.is_responsible_supervisor ? 'rgba(26,122,80,0.2)' : 'var(--border)') }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 10 }}>
+                        <div>
+                          <p style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 500, color: 'var(--ink)', margin: '0 0 2px' }}>{s.supervisor_name}</p>
+                          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: 0 }}>{s.bacb_account_id || 'No BACB ID on file'}</p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: s.is_responsible_supervisor ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: s.is_responsible_supervisor ? 'var(--spruce)' : 'var(--muted)' }}>
+                            {s.is_responsible_supervisor ? 'Responsible' : 'Contributing'}
+                          </span>
+                          {!s.is_responsible_supervisor && (
+                            <button
+                              onClick={() => handleMakeResponsible(s.id)}
+                              disabled={reassigningId === s.id}
+                              style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: reassigningId === s.id ? 'not-allowed' : 'pointer' }}
+                            >
+                              {reassigningId === s.id ? 'Updating...' : 'Make Responsible'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Contract status + upload */}
+                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid ' + (s.is_responsible_supervisor ? 'rgba(26,122,80,0.15)' : 'var(--border)'), display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8 }}>
+                        {hasContract ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+                            <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(26,122,80,0.1)', color: 'var(--spruce)' }}>✓ Contract on file</span>
+                            {s.contract_signed_date && (
+                              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>
+                                signed {new Date(s.contract_signed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                            )}
+                            {s.contract_file_url && (
+                              <a href={s.contract_file_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--sky)' }}>View file</a>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(255,160,0,0.1)', color: 'var(--amber)' }}>! No contract on file</span>
+                        )}
+
+                        {s.supervisor_user_id && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <input
+                              type="date"
+                              value={contractSignedDateFor[s.id] || ''}
+                              onChange={e => setContractSignedDateFor(prev => ({ ...prev, [s.id]: e.target.value }))}
+                              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)' }}
+                            />
+                            <input
+                              ref={el => { fileInputRefs.current[s.id] = el; }}
+                              type="file"
+                              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                              style={{ display: 'none' }}
+                              onChange={e => { const f = e.target.files?.[0]; if (f) handleContractUpload(s.id, f); }}
+                            />
+                            <button
+                              onClick={() => fileInputRefs.current[s.id]?.click()}
+                              disabled={contractUploadingFor === s.id}
+                              style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: contractUploadingFor === s.id ? 'not-allowed' : 'pointer' }}
+                            >
+                              {contractUploadingFor === s.id ? 'Uploading...' : hasContract ? 'Replace file' : 'Upload contract'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: s.is_responsible_supervisor ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: s.is_responsible_supervisor ? 'var(--spruce)' : 'var(--muted)' }}>
-                        {s.is_responsible_supervisor ? 'Responsible' : 'Contributing'}
-                      </span>
-                      {!s.is_responsible_supervisor && (
-                        <button
-                          onClick={() => handleMakeResponsible(s.id)}
-                          disabled={reassigningId === s.id}
-                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: reassigningId === s.id ? 'not-allowed' : 'pointer' }}
-                        >
-                          {reassigningId === s.id ? 'Updating...' : 'Make Responsible'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

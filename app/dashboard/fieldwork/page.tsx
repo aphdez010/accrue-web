@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../context/api-context';
 
 const TYPES = ['Unrestricted Hours','Restricted Hours','Experience — Other'];
@@ -28,8 +29,22 @@ function calcHours(start: string, end: string) {
   return diff > 0 ? (diff / 60).toFixed(2) : '';
 }
 
+type Supervisor = {
+  id: number;
+  professional_id: number;
+  supervisor_name: string;
+  supervisor_credential: string | null;
+  is_responsible: boolean;
+  supervision_start_date: string | null;
+  supervision_end_date: string | null;
+  contract_document_id: number | null;
+  contract_file_name?: string | null;
+  contract_file_url?: string | null;
+};
+
 export default function FieldworkPage() {
   const { get, post, patch } = useApi();
+  const { getToken } = useAuth();
   const [entries, setEntries] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -89,6 +104,71 @@ export default function FieldworkPage() {
   const [notes, setNotes] = useState('');
   const [entryFieldworkType, setEntryFieldworkType] = useState<'supervised' | 'concentrated'>(track);
   const [editingId, setEditingId] = useState<string | number | null>(null);
+
+  // Supervisors panel state
+  const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
+  const [loadingSupervisors, setLoadingSupervisors] = useState(true);
+  const [supervisorErr, setSupervisorErr] = useState('');
+  const [reassigningId, setReassigningId] = useState<number | null>(null);
+  const [contractUploadingFor, setContractUploadingFor] = useState<number | null>(null);
+  const [contractSignedDateFor, setContractSignedDateFor] = useState<Record<number, string>>({});
+  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+  function loadSupervisors() {
+    setLoadingSupervisors(true);
+    setSupervisorErr('');
+    get('/supervisors').then((r: any) => {
+      setSupervisors(Array.isArray(r?.supervisors) ? r.supervisors : []);
+    }).catch((e: any) => setSupervisorErr(e.message || 'Could not load supervisors')).finally(() => setLoadingSupervisors(false));
+  }
+
+  useEffect(() => { loadSupervisors(); }, []);
+
+  async function handleMakeResponsible(supervisorId: number) {
+    setReassigningId(supervisorId);
+    setSupervisorErr('');
+    try {
+      await patch('/supervisors/' + supervisorId + '/make-responsible', {});
+      loadSupervisors();
+    } catch (e: any) {
+      setSupervisorErr(e.message || 'Failed to reassign Responsible Supervisor');
+    } finally {
+      setReassigningId(null);
+    }
+  }
+
+  async function handleContractUpload(supervisorId: number, file: File) {
+    setContractUploadingFor(supervisorId);
+    setSupervisorErr('');
+    try {
+      const token = await getToken();
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      const base = apiUrl.replace(/\/api$/, '');
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'supervision_contract');
+      const uploadRes = await fetch(`${base}/vault/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!uploadRes.ok) throw new Error('Upload failed');
+      const uploadData = await uploadRes.json();
+      const vaultDocumentId = uploadData?.document?.id;
+      if (!vaultDocumentId) throw new Error('Upload succeeded but no document id was returned');
+
+      await patch('/supervisors/' + supervisorId + '/contract', {
+        vaultDocumentId,
+        contractSignedDate: contractSignedDateFor[supervisorId] || undefined,
+      });
+      loadSupervisors();
+    } catch (e: any) {
+      setSupervisorErr(e.message || 'Failed to attach contract');
+    } finally {
+      setContractUploadingFor(null);
+    }
+  }
 
   useEffect(() => {
     if (!editingId) setEntryFieldworkType(track);
@@ -183,6 +263,7 @@ export default function FieldworkPage() {
       setSupervisorName('');
       setOk(true); setTimeout(() => setOk(false), 3000);
       load();
+      loadSupervisors();
     } catch (e: any) { setErr(e.message || 'Error'); }
     finally { setBusy(false); }
   }
@@ -258,6 +339,95 @@ export default function FieldworkPage() {
         <button onClick={() => setTrack('concentrated')} disabled={trackBusy} style={{ border: 0, background: track === 'concentrated' ? 'var(--spruce)' : 'transparent', color: track === 'concentrated' ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', padding: '8px 16px', borderRadius: 8, cursor: trackBusy ? 'not-allowed' : 'pointer' }}>
           Concentrated · 1,500 hrs
         </button>
+      </div>
+
+      {/* Supervisors panel */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '24px 28px', marginBottom: 24, minWidth: 0 }}>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>Supervisors</p>
+
+        {supervisorErr && (
+          <div style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid var(--amber)', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--amber)', margin: 0 }}>{supervisorErr}</p>
+          </div>
+        )}
+
+        {loadingSupervisors ? (
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>Loading supervisors...</p>
+        ) : supervisors.length === 0 ? (
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>No supervisors on file yet. Log a supervised entry with a supervisor name below to add one.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+            {supervisors.map(s => {
+              const hasContract = !!s.contract_document_id;
+              return (
+                <div key={s.id} style={{ padding: '12px 14px', borderRadius: 8, background: s.is_responsible ? 'rgba(26,122,80,0.06)' : 'var(--bg)', border: '1px solid ' + (s.is_responsible ? 'rgba(26,122,80,0.2)' : 'var(--border)') }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 10 }}>
+                    <div>
+                      <p style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 500, color: 'var(--ink)', margin: '0 0 2px' }}>{s.supervisor_name}</p>
+                      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: 0 }}>{s.supervisor_credential || 'No credential on file'}</p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: s.is_responsible ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: s.is_responsible ? 'var(--spruce)' : 'var(--muted)' }}>
+                        {s.is_responsible ? 'Responsible' : 'Contributing'}
+                      </span>
+                      {!s.is_responsible && (
+                        <button
+                          onClick={() => handleMakeResponsible(s.id)}
+                          disabled={reassigningId === s.id}
+                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: reassigningId === s.id ? 'not-allowed' : 'pointer' }}
+                        >
+                          {reassigningId === s.id ? 'Updating...' : 'Make Responsible'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contract status + upload */}
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid ' + (s.is_responsible ? 'rgba(26,122,80,0.15)' : 'var(--border)'), display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8 }}>
+                    {hasContract ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+                        <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(26,122,80,0.1)', color: 'var(--spruce)' }}>✓ Contract on file</span>
+                        {s.supervision_start_date && (
+                          <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>
+                            signed {new Date(s.supervision_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        )}
+                        {s.contract_file_url && (
+                          <a href={s.contract_file_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--sky)' }}>View file</a>
+                        )}
+                      </div>
+                    ) : (
+                      <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(255,160,0,0.1)', color: 'var(--amber)' }}>! No contract on file</span>
+                    )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input
+                        type="date"
+                        value={contractSignedDateFor[s.id] || ''}
+                        onChange={e => setContractSignedDateFor(prev => ({ ...prev, [s.id]: e.target.value }))}
+                        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)' }}
+                      />
+                      <input
+                        ref={el => { fileInputRefs.current[s.id] = el; }}
+                        type="file"
+                        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                        style={{ display: 'none' }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleContractUpload(s.id, f); }}
+                      />
+                      <button
+                        onClick={() => fileInputRefs.current[s.id]?.click()}
+                        disabled={contractUploadingFor === s.id}
+                        style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: contractUploadingFor === s.id ? 'not-allowed' : 'pointer' }}
+                      >
+                        {contractUploadingFor === s.id ? 'Uploading...' : hasContract ? 'Replace file' : 'Upload contract'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Calendar */}

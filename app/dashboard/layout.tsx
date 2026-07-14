@@ -19,6 +19,16 @@ function getRoleFromPath(pathname: string, roleParam: string | null): Role {
 
 const roleLabels: Record<Role, string> = { trainee: 'Trainee', bcaba: 'BCaBA', bcba: 'BCBA' };
 
+// Where clicking each role tab should actually take you. Previously the tabs
+// only updated local state (which relabeled the sidebar links) without
+// navigating, so clicking a tab appeared to do nothing unless you separately
+// clicked a nav link underneath.
+const roleDefaultPath: Record<Role, string> = {
+  trainee: '/dashboard/fieldwork',
+  bcaba: '/dashboard/bcaba',
+  bcba: '/dashboard',
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={null}>
@@ -36,6 +46,12 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setRole(getRoleFromPath(pathname, roleParam));
   }, [pathname, roleParam]);
+
+  function handleRoleSwitch(r: Role) {
+    setRole(r);
+    router.push(roleDefaultPath[r]);
+  }
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -161,7 +177,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
             <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2 }}>
               {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
-                <button key={r} onClick={() => setRole(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10px var(--sans)', padding: '5px 9px', borderRadius: 6, cursor: 'pointer' }}>
+                <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10px var(--sans)', padding: '5px 9px', borderRadius: 6, cursor: 'pointer' }}>
                   {roleLabels[r]}
                 </button>
               ))}
@@ -215,7 +231,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
           <div style={{ margin: 12, background: 'var(--bg)', borderRadius: 10, padding: 3, display: 'flex' }}>
             {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
-              <button key={r} onClick={() => setRole(r)} style={{ flex: 1, border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 11px var(--sans)', padding: '7px 4px', borderRadius: 8, cursor: 'pointer' }}>
+              <button key={r} onClick={() => handleRoleSwitch(r)} style={{ flex: 1, border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 11px var(--sans)', padding: '7px 4px', borderRadius: 8, cursor: 'pointer' }}>
                 {roleLabels[r]}
               </button>
             ))}

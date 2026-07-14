@@ -18,6 +18,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const inp = { width: '100%', maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const, WebkitAppearance: 'none' as const };
 const lbl = { display: 'block' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 6 };
+const helpTxt = { fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--muted)', margin: '4px 0 0 30px', lineHeight: 1.5 };
 
 function pad(n: number) { return n < 10 ? '0' + n : String(n); }
 
@@ -656,58 +657,65 @@ export default function FieldworkPage() {
         </div>
 
         {/* Row 5: Supervised toggle + format + group type */}
-        <div style={{ display: 'grid', gridTemplateColumns: supervised ? 'repeat(auto-fit, minmax(160px, 1fr))' : '1fr', gap: 16, marginBottom: 20 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-              <div onClick={() => setSupervised(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (supervised ? 'var(--spruce)' : 'var(--border)'), background: supervised ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-                {supervised && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+        <div style={{ marginBottom: 4 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: supervised ? 'repeat(auto-fit, minmax(160px, 1fr))' : '1fr', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <div onClick={() => setSupervised(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (supervised ? 'var(--spruce)' : 'var(--border)'), background: supervised ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                  {supervised && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </div>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Supervised session</span>
+              </label>
+              <p style={helpTxt}>Check this if the hours logged count toward your supervised-hours total (feeds your BACB percentage requirement).</p>
+            </div>
+            {supervised && (
+              <div style={{ minWidth: 0 }}>
+                <label style={lbl}>Supervision Format</label>
+                <select value={supFormat} onChange={e => setSupFormat(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                  {SUP_FORMATS.map(f => <option key={f}>{f}</option>)}
+                </select>
               </div>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Supervised session</span>
-            </label>
+            )}
+            {supervised && (
+              <div style={{ minWidth: 0 }}>
+                <label style={lbl}>Supervision Type</label>
+                <select value={supervisionGroupType} onChange={e => setSupervisionGroupType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                  {GROUP_TYPES.map(g => <option key={g}>{g}</option>)}
+                </select>
+              </div>
+            )}
           </div>
-          {supervised && (
-            <div style={{ minWidth: 0 }}>
-              <label style={lbl}>Supervision Format</label>
-              <select value={supFormat} onChange={e => setSupFormat(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-                {SUP_FORMATS.map(f => <option key={f}>{f}</option>)}
-              </select>
-            </div>
-          )}
-          {supervised && (
-            <div style={{ minWidth: 0 }}>
-              <label style={lbl}>Supervision Type</label>
-              <select value={supervisionGroupType} onChange={e => setSupervisionGroupType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-                {GROUP_TYPES.map(g => <option key={g}>{g}</option>)}
-              </select>
-            </div>
-          )}
         </div>
 
         {supervised && (
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginTop: 16, marginBottom: 20 }}>
             <label style={lbl}>Supervisor Name</label>
             <input type="text" placeholder="e.g. Dr. Smith" value={supervisorName} onChange={e => setSupervisorName(e.target.value)} style={inp} />
           </div>
         )}
 
         {/* Supervisor Present */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginTop: supervised ? 0 : 20, marginBottom: 20 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
             <div onClick={() => setSupervisorPresent(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (supervisorPresent ? 'var(--spruce)' : 'var(--border)'), background: supervisorPresent ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
               {supervisorPresent && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             </div>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Supervisor present</span>
           </label>
+          <p style={helpTxt}>Check this if your supervisor was physically or virtually present during this specific activity — independent of whether the hours are being logged as supervised.</p>
         </div>
 
         {/* Monthly observation + minutes */}
-        <div style={{ display: 'grid', gridTemplateColumns: monthlyObs ? '1fr 200px' : '1fr', gap: 16, marginBottom: 20, alignItems: 'end' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-            <div onClick={() => setMonthlyObs(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (monthlyObs ? 'var(--spruce)' : 'var(--border)'), background: monthlyObs ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-              {monthlyObs && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            </div>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Monthly observation (supervisor present)</span>
-          </label>
+        <div style={{ display: 'grid', gridTemplateColumns: monthlyObs ? '1fr 200px' : '1fr', gap: 16, marginBottom: 4, alignItems: 'end' }}>
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <div onClick={() => setMonthlyObs(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (monthlyObs ? 'var(--spruce)' : 'var(--border)'), background: monthlyObs ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                {monthlyObs && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              </div>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Monthly observation completed</span>
+            </label>
+            <p style={helpTxt}>This is the once-per-month required direct observation of you working with a client — separate from marking "Supervisor present" above on individual entries.</p>
+          </div>
           {monthlyObs && (
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Observation Minutes</label>
@@ -715,6 +723,8 @@ export default function FieldworkPage() {
             </div>
           )}
         </div>
+
+        <div style={{ marginBottom: 24 }} />
 
         {/* Notes */}
         <div style={{ marginBottom: 24 }}>
@@ -745,7 +755,7 @@ export default function FieldworkPage() {
           <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? 11 : 13 }}>
             <thead>
-              <tr>{['Date','Description','Setting','Hours','Supv','Task Area','Obs',''].map(h => (
+              <tr>{['Date','Description','Setting','Hours','Supervised','Format','Present','Task Area','Obs',''].map(h => (
                 <th key={h} style={{ textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
               ))}</tr>
             </thead>
@@ -757,10 +767,12 @@ export default function FieldworkPage() {
                   <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.setting || '—'}</td>
                   <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--display)', fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{Number(e.hours||0).toFixed(1)}</td>
                   <td style={{ padding: '12px 16px 12px 0' }}>
-                    <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontFamily: 'var(--mono)', background: e.supervised ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: e.supervised ? 'var(--spruce)' : 'var(--muted)' }}>{e.supervised ? e.supervision_format || 'Yes' : 'No'}</span>
+                    <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontFamily: 'var(--mono)', background: e.supervised ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: e.supervised ? 'var(--spruce)' : 'var(--muted)' }}>{e.supervised ? 'Yes' : 'No'}</span>
                   </td>
+                  <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.supervised ? (e.supervision_format || '—') : '—'}</td>
+                  <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11 }}>{e.supervisor_present ? <span style={{ color: 'var(--spruce)' }}>✓</span> : <span style={{ color: 'var(--muted)' }}>—</span>}</td>
                   <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.task_list_area ? `${e.task_list_area}${e.task_list_area_number ? ' #'+e.task_list_area_number : ''}` : '—'}</td>
-                  <td style={{ padding: '12px 0', fontFamily: 'var(--mono)', fontSize: 11 }}>{e.monthly_observation ? <span style={{ color: 'var(--spruce)' }}>✓{e.observation_minutes ? ` ${e.observation_minutes}m` : ''}</span> : '—'}</td>
+                  <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11 }}>{e.monthly_observation ? <span style={{ color: 'var(--spruce)' }}>✓{e.observation_minutes ? ` ${e.observation_minutes}m` : ''}</span> : '—'}</td>
                   <td style={{ padding: '12px 0 12px 16px' }}>
                     <button onClick={() => startEdit(e)} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', cursor: 'pointer' }}>
                       Edit

@@ -6,13 +6,16 @@ const ENTRY_TYPES = ['supervised', 'observation'];
 const SUP_FORMATS = ['individual', 'group'];
 const RESTRICTION_TYPES = ['unrestricted', 'restricted'];
 const SYNC_TYPES = ['asynchronous', 'synchronized'];
+const TASK_AREAS = [
+  'A. Measurement','B. Skill Acquisition','C. Behavior Reduction',
+  'D. Documentation & Reporting','E. Professional Conduct',
+  'F. Behavior Assessment','G. Behavior-Change Procedures',
+  'H. Selecting & Implementing Interventions','I. Personnel Supervision',
+];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const inp = { width: '100%', maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const, WebkitAppearance: 'none' as const };
 const lbl = { display: 'block' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 6 };
-
-const TRAINEE_ID = 1;
-const SUPERVISOR_ID = 1;
 
 function pad(n: number) { return n < 10 ? '0' + n : String(n); }
 
@@ -26,11 +29,38 @@ export default function BcabaPage() {
   const [err, setErr] = useState('');
   const [isMobile, setIsMobile] = useState(false);
 
+  // Real identity, resolved via /bcaba/me — NOT professionals.id, which is a
+  // different table's primary key and does not correspond to bcaba_trainees.id.
+  const [myTraineeId, setMyTraineeId] = useState<number | null>(null);
+  const [loadingIdentity, setLoadingIdentity] = useState(true);
+  const [responsibleSupervisorId, setResponsibleSupervisorId] = useState<number | null>(null);
+  const [identityErr, setIdentityErr] = useState('');
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
+  }, []);
+
+  useEffect(() => {
+    setLoadingIdentity(true);
+    get('/bcaba/me').then((trainee: any) => {
+      if (!trainee?.id) {
+        setIdentityErr('Could not determine your trainee record. Contact support if this persists.');
+        return;
+      }
+      setMyTraineeId(trainee.id);
+      return get('/bcaba/trainees/' + trainee.id + '/supervisors').then((r: any) => {
+        const list = Array.isArray(r?.supervisors) ? r.supervisors : [];
+        const responsible = list.find((s: any) => s.is_responsible_supervisor);
+        if (responsible) setResponsibleSupervisorId(responsible.id);
+        else setIdentityErr('No responsible supervisor is on file yet. Add one before logging hours.');
+      });
+    }).catch((e: any) => {
+      console.error('Failed to resolve trainee/supervisor identity:', e);
+      setIdentityErr(e?.message || 'Could not load your supervisor information. Please try again.');
+    }).finally(() => setLoadingIdentity(false));
   }, []);
 
   const today = new Date();
@@ -48,28 +78,37 @@ export default function BcabaPage() {
   const [clientPresent, setClientPresent] = useState(false);
   const [entrySyncType, setEntrySyncType] = useState('synchronized');
   const [supervisorPresent, setSupervisorPresent] = useState(false);
+  const [activityDesc, setActivityDesc] = useState('');
+  const [taskArea, setTaskArea] = useState('');
+  const [taskAreaNum, setTaskAreaNum] = useState('');
   const [notes, setNotes] = useState('');
 
-  const load = () => get('/bcaba/trainees/' + TRAINEE_ID + '/monthly/' + monthYear).then((r: any) => {
-    setEntries(Array.isArray(r?.entries) ? r.entries : []);
-    setSummary(r?.summary || null);
-    setCompliance(r?.compliance || null);
-  }).catch(() => {});
+  const load = () => {
+    if (!myTraineeId) return;
+    get('/bcaba/trainees/' + myTraineeId + '/monthly/' + monthYear).then((r: any) => {
+      setEntries(Array.isArray(r?.entries) ? r.entries : []);
+      setSummary(r?.summary || null);
+      setCompliance(r?.compliance || null);
+    }).catch((e: any) => console.error('Failed to load monthly entries:', e));
+  };
 
-  useEffect(() => { load(); }, [viewYear, viewMonth]);
+  useEffect(() => { load(); }, [viewYear, viewMonth, myTraineeId]);
 
   async function submit() {
-    if (!date || !hours) return;
+    if (!date || !hours || !myTraineeId || !responsibleSupervisorId) return;
     setBusy(true); setErr('');
     try {
       await post('/bcaba/fieldwork-entries', {
-        traineeId: TRAINEE_ID,
-        supervisorId: SUPERVISOR_ID,
+        traineeId: myTraineeId,
+        supervisorId: responsibleSupervisorId,
         entryDate: date,
         entryType,
         hours: parseFloat(hours),
         activityCategory: 'direct_client_work',
         supervisionFormat: supFormat,
+        activityDescription: activityDesc || null,
+        taskListArea: taskArea || null,
+        taskListAreaNumber: taskAreaNum ? parseInt(taskAreaNum, 10) : null,
         notes: notes || null,
         restrictionType,
         clientPresent,
@@ -77,6 +116,7 @@ export default function BcabaPage() {
         supervisorPresent,
       });
       setHours(''); setNotes(''); setClientPresent(false); setSupervisorPresent(false);
+      setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
       setOk(true); setTimeout(() => setOk(false), 3000);
       load();
     } catch (e: any) { setErr(e.message || 'Error'); }
@@ -140,6 +180,12 @@ export default function BcabaPage() {
     <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 960, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>BCaBA Fieldwork</p>
       <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 24px' }}>Fieldwork Calendar</h1>
+
+      {identityErr && (
+        <div style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid var(--amber)', borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--amber)', margin: 0 }}>{identityErr}</p>
+        </div>
+      )}
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '24px 28px', marginBottom: 24, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap' as const, gap: 8 }}>
@@ -261,7 +307,7 @@ export default function BcabaPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
           <div style={{ minWidth: 0 }}>
-            <label style={lbl}>Entry Type</label>
+            <label style={lbl}>Session Type</label>
             <select value={entryType} onChange={e => setEntryType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
               {ENTRY_TYPES.map(t => <option key={t} value={t}>{t === 'supervised' ? 'Supervised session' : 'Observation'}</option>)}
             </select>
@@ -277,6 +323,25 @@ export default function BcabaPage() {
             <select value={entrySyncType} onChange={e => setEntrySyncType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
               {SYNC_TYPES.map(s => <option key={s} value={s}>{s === 'asynchronous' ? 'Asynchronous' : 'Synchronized'}</option>)}
             </select>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={lbl}>Activity Description</label>
+          <textarea value={activityDesc} onChange={e => setActivityDesc(e.target.value)} placeholder="Describe the activity (e.g. DTT with client, performance evaluation with feedback)" style={{ ...inp, minHeight: 72, resize: 'vertical' as const }} />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '2fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div style={{ minWidth: 0 }}>
+            <label style={lbl}>Task List Area</label>
+            <select value={taskArea} onChange={e => setTaskArea(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+              <option value="">Select area...</option>
+              {TASK_AREAS.map(a => <option key={a}>{a}</option>)}
+            </select>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <label style={lbl}>Task List Item #</label>
+            <input type="number" min="1" placeholder="e.g. 4" value={taskAreaNum} onChange={e => setTaskAreaNum(e.target.value)} style={inp} />
           </div>
         </div>
 
@@ -312,8 +377,8 @@ export default function BcabaPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' as const }}>
-          <button onClick={submit} disabled={busy || !hours || !date} style={{ background: busy ? 'var(--muted)' : 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '11px 28px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '.06em', cursor: busy ? 'not-allowed' : 'pointer' }}>
-            {busy ? 'Logging...' : 'Log Entry'}
+          <button onClick={submit} disabled={busy || !hours || !date || !myTraineeId || !responsibleSupervisorId} style={{ background: busy ? 'var(--muted)' : 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '11px 28px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '.06em', cursor: (busy || !myTraineeId || !responsibleSupervisorId) ? 'not-allowed' : 'pointer' }}>
+            {busy ? 'Logging...' : loadingIdentity ? 'Loading...' : 'Log Entry'}
           </button>
           {ok && <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--spruce)' }}>✓ Entry logged</span>}
           {err && <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--amber)' }}>{err}</span>}
@@ -328,7 +393,7 @@ export default function BcabaPage() {
           <div style={{ overflowX: 'auto' as const }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' as const, fontSize: isMobile ? 11 : 13 }}>
               <thead>
-                <tr>{['Date', 'Type', 'Format', 'Hours', 'Restriction', 'Client'].map(h => (
+                <tr>{['Date', 'Type', 'Format', 'Hours', 'Restriction', 'Task Area', 'Client'].map(h => (
                   <th key={h} style={{ textAlign: 'left' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
                 ))}</tr>
               </thead>
@@ -342,6 +407,7 @@ export default function BcabaPage() {
                     <td style={{ padding: '12px 16px 12px 0' }}>
                       <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontFamily: 'var(--mono)', background: e.restriction_type === 'unrestricted' ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: e.restriction_type === 'unrestricted' ? 'var(--spruce)' : 'var(--muted)' }}>{e.restriction_type || '-'}</span>
                     </td>
+                    <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.task_list_area ? `${e.task_list_area}${e.task_list_area_number ? ' #'+e.task_list_area_number : ''}` : '—'}</td>
                     <td style={{ padding: '12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.client_present ? 'Yes' : 'No'}</td>
                   </tr>
                 ))}

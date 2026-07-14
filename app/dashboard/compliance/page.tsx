@@ -98,6 +98,8 @@ export default function CompliancePage() {
 
   const d = data;
   const totalRequired = d?.totalHoursRequired || 2000;
+  const currentMonthEntry = (d?.monthlyBreakdown || []).find((m: any) => m.month === month);
+  const monthIneligible = !!currentMonthEntry && currentMonthEntry.eligibleHours === 0 && currentMonthEntry.rawHours > 0;
 
   const card = (label: string, value: string, sub?: string, color?: string) => (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
@@ -107,15 +109,15 @@ export default function CompliancePage() {
     </div>
   );
 
-  const badge = (pass: boolean, label: string, val: string) => (
+  const badge = (pass: boolean, label: string, val: string, ineligible?: boolean) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: isMobile ? '100%' : 'auto' }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: pass ? 'var(--spruce)' : 'var(--amber)', flexShrink: 0 }} />
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: (ineligible || !pass) ? 'var(--amber)' : 'var(--spruce)', flexShrink: 0 }} />
         <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)' }}>{label}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 500, color: 'var(--ink)' }}>{val}</span>
-        <span style={{ display: 'inline-block', padding: '3px 12px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: pass ? 'rgba(26,122,80,0.1)' : 'rgba(255,160,0,0.1)', color: pass ? 'var(--spruce)' : 'var(--amber)' }}>{pass ? 'Met' : 'Action needed'}</span>
+        <span style={{ display: 'inline-block', padding: '3px 12px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: (ineligible || !pass) ? 'rgba(255,160,0,0.1)' : 'rgba(26,122,80,0.1)', color: (ineligible || !pass) ? 'var(--amber)' : 'var(--spruce)' }}>{ineligible ? 'Ineligible this month' : (pass ? 'Met' : 'Action needed')}</span>
       </div>
     </div>
   );
@@ -234,10 +236,18 @@ export default function CompliancePage() {
             </div>
           )}
 
+          {monthIneligible && (
+            <div style={{ background: 'rgba(255,160,0,0.1)', border: '1px solid rgba(255,160,0,0.4)', borderRadius: 12, padding: '16px 20px', marginBottom: 12 }}>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 600, color: 'var(--amber)', margin: 0, lineHeight: 1.6 }}>
+                ⚠ None of your logged hours for {month} currently count toward your total ({(currentMonthEntry?.reasons || []).map((r: string) => ADJUSTMENT_REASON_LABELS[r] || r).join('; ')}). The percentages below are calculated from raw logged hours and will not reflect your real standing until this is resolved.
+              </p>
+            </div>
+          )}
+
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px', marginBottom: 24, minWidth: 0 }}>
             <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>BACB Requirements — {month}</p>
-            {badge(d.supervisionMet, `Supervision ≥ ${(d.supervisionPct !== undefined ? '' : '')}${Math.round((d.totalHoursRequired === 1500 ? 10 : 5))}% of hours`, Number(d.supervisionPct || 0).toFixed(1) + ' %')}
-            {badge(d.restrictedMet, 'Unrestricted activities ≥ 60% of total', Number(100 - (d.restrictedPct || 0)).toFixed(1) + ' %')}
+            {badge(d.supervisionMet, `Supervision ≥ ${(d.supervisionPct !== undefined ? '' : '')}${Math.round((d.totalHoursRequired === 1500 ? 10 : 5))}% of hours`, Number(d.supervisionPct || 0).toFixed(1) + ' %', monthIneligible)}
+            {badge(d.restrictedMet, 'Unrestricted activities ≥ 60% of total', Number(100 - (d.restrictedPct || 0)).toFixed(1) + ' %', monthIneligible)}
             {badge(d.contactsMet, 'Supervision contacts this month', `${d.supervisionContacts} of ${d.contactsRequired || '—'} required`)}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

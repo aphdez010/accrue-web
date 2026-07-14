@@ -18,9 +18,13 @@ export default function MyMonthlyVerificationPage() {
 
   const load = () => {
     setLoading(true);
+    setErr('');
     get('/bcaba-monthly-verification/mine').then((r: any) => {
       setVerifications(Array.isArray(r?.verifications) ? r.verifications : []);
-    }).catch(() => setErr('Failed to load monthly verifications')).finally(() => setLoading(false));
+    }).catch((e: any) => {
+      console.error('Failed to load monthly verifications:', e);
+      setErr(e?.message ? `Failed to load monthly verifications: ${e.message}` : 'Failed to load monthly verifications. Please try again.');
+    }).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
@@ -40,6 +44,7 @@ export default function MyMonthlyVerificationPage() {
       setSigningId(null);
       load();
     } catch (e: any) {
+      console.error('Failed to sign M-FVF:', e);
       setErr(e.message || 'Failed to sign');
     }
   }
@@ -54,14 +59,20 @@ export default function MyMonthlyVerificationPage() {
       <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 24px' }}>Monthly Verification (M-FVF)</h1>
 
       {err && (
-        <div style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid var(--amber)', borderRadius: 10, padding: '12px 16px', marginBottom: 20 }}>
+        <div style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid var(--amber)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--amber)', margin: 0 }}>{err}</p>
+          <button
+            onClick={load}
+            style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--amber)', background: 'transparent', border: '1px solid var(--amber)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            ↻ Retry
+          </button>
         </div>
       )}
 
       {loading ? (
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>Loading...</p>
-      ) : verifications.length === 0 ? (
+      ) : err ? null : verifications.length === 0 ? (
         <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)' }}>No monthly verifications yet. Your supervisor creates these once your fieldwork hours for the month are logged.</p>
       ) : (
         <>

@@ -2,18 +2,14 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../context/api-context';
+import { BCBA_TCO_6TH_ED, BCBA_TCO_DOMAIN_LABELS } from '../../lib/bcba-tco';
 
 const TYPES = ['Unrestricted Hours','Restricted Hours','Experience — Other'];
 const SETTINGS = ['Home','Center','School','Community','Telehealth','Other'];
 const SUP_FORMATS = ['In person','Virtual','With Client','N/A'];
 const SYNC_TYPES = ['Asynchronous','Synchronized'];
 const GROUP_TYPES = ['Individual','Group'];
-const TASK_AREAS = [
-  'A. Measurement','B. Skill Acquisition','C. Behavior Reduction',
-  'D. Documentation & Reporting','E. Professional Conduct',
-  'F. Behavior Assessment','G. Behavior-Change Procedures',
-  'H. Selecting & Implementing Interventions','I. Personnel Supervision',
-];
+const TASK_AREAS = BCBA_TCO_DOMAIN_LABELS;
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const inp = { width: '100%', maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const, WebkitAppearance: 'none' as const };
@@ -741,18 +737,28 @@ export default function FieldworkPage() {
           <textarea value={activityDesc} onChange={e => setActivityDesc(e.target.value)} placeholder="Describe the activity (e.g. DTT with client, performance evaluation with feedback)" style={{ ...inp, minHeight: 72, resize: 'vertical' }} />
         </div>
 
-        {/* Row 4: Task List Area */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '2fr 1fr', gap: 12, marginBottom: 16 }}>
+        {/* Row 4: Task List Area — per BCBA Test Content Outline (6th ed.) */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 2fr', gap: 12, marginBottom: 16 }}>
           <div style={{ minWidth: 0 }}>
-            <label style={lbl}>Task List Area</label>
-            <select value={taskArea} onChange={e => setTaskArea(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-              <option value="">Select area...</option>
+            <label style={lbl}>TCO Domain</label>
+            <select value={taskArea} onChange={e => { setTaskArea(e.target.value); setTaskAreaNum(''); }} style={{ ...inp, cursor: 'pointer' }}>
+              <option value="">Select domain...</option>
               {TASK_AREAS.map(a => <option key={a}>{a}</option>)}
             </select>
           </div>
           <div style={{ minWidth: 0 }}>
-            <label style={lbl}>Task List Item #</label>
-            <input type="number" min="1" placeholder="e.g. 4" value={taskAreaNum} onChange={e => setTaskAreaNum(e.target.value)} style={inp} />
+            <label style={lbl}>Task</label>
+            <select
+              value={taskAreaNum}
+              onChange={e => setTaskAreaNum(e.target.value)}
+              disabled={!taskArea}
+              style={{ ...inp, cursor: taskArea ? 'pointer' : 'not-allowed', opacity: taskArea ? 1 : 0.5 }}
+            >
+              <option value="">{taskArea ? 'Select task...' : 'Select a domain first'}</option>
+              {taskArea && BCBA_TCO_6TH_ED.find(d => `${d.code}. ${d.name}` === taskArea)?.tasks.map(t => (
+                <option key={t.num} value={t.num}>{t.num} — {t.text}</option>
+              ))}
+            </select>
           </div>
         </div>
 

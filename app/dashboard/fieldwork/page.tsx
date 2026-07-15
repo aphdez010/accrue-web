@@ -42,6 +42,15 @@ type Supervisor = {
   contract_file_name?: string | null;
   contract_file_url?: string | null;
   supervisor_training_date: string | null;
+  supervisor_certification_date?: string | null;
+  consulting_supervisor_name?: string | null;
+  consulting_supervisor_last_consultation_date?: string | null;
+  qualification?: {
+    isFirstYear: boolean | null;
+    needsConsultingSupervisor: boolean;
+    consultingSupervisorMet: boolean | null;
+    reason: string | null;
+  };
 };
 
 export default function FieldworkPage() {
@@ -120,6 +129,12 @@ export default function FieldworkPage() {
   const [trainingDateFor, setTrainingDateFor] = useState<Record<number, string>>({});
   const [savingTrainingFor, setSavingTrainingFor] = useState<number | null>(null);
 
+  // Qualification state (certification date + consulting supervisor), keyed by supervisor id
+  const [certDateFor, setCertDateFor] = useState<Record<number, string>>({});
+  const [consultingNameFor, setConsultingNameFor] = useState<Record<number, string>>({});
+  const [consultingDateFor, setConsultingDateFor] = useState<Record<number, string>>({});
+  const [savingQualificationsFor, setSavingQualificationsFor] = useState<number | null>(null);
+
   function loadSupervisors() {
     setLoadingSupervisors(true);
     setSupervisorErr('');
@@ -188,6 +203,23 @@ export default function FieldworkPage() {
       setSupervisorErr(e.message || 'Failed to save training date');
     } finally {
       setSavingTrainingFor(null);
+    }
+  }
+
+  async function handleSaveQualifications(supervisorId: number) {
+    setSavingQualificationsFor(supervisorId);
+    setSupervisorErr('');
+    try {
+      await patch('/supervisors/' + supervisorId + '/qualifications', {
+        certificationDate: certDateFor[supervisorId] || undefined,
+        consultingSupervisorName: consultingNameFor[supervisorId] ?? undefined,
+        consultingSupervisorLastConsultationDate: consultingDateFor[supervisorId] || undefined,
+      });
+      loadSupervisors();
+    } catch (e: any) {
+      setSupervisorErr(e.message || 'Failed to save qualification info');
+    } finally {
+      setSavingQualificationsFor(null);
     }
   }
 
@@ -471,6 +503,74 @@ export default function FieldworkPage() {
                         {savingTrainingFor === s.id ? 'Saving...' : hasTraining ? 'Update date' : 'Save date'}
                       </button>
                     </div>
+                  </div>
+
+                  {/* Qualifications: certification date + consulting supervisor (first-year rule) */}
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid ' + (s.is_responsible ? 'rgba(26,122,80,0.15)' : 'var(--border)') }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8, marginBottom: 8 }}>
+                      {s.supervisor_certification_date ? (
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>
+                          Certified {new Date(s.supervisor_certification_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {s.qualification?.isFirstYear && ' · first-year'}
+                        </span>
+                      ) : (
+                        <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(255,160,0,0.1)', color: 'var(--amber)' }}>! Certification date not on file</span>
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <input
+                          type="date"
+                          value={certDateFor[s.id] ?? s.supervisor_certification_date ?? ''}
+                          onChange={e => setCertDateFor(prev => ({ ...prev, [s.id]: e.target.value }))}
+                          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)' }}
+                        />
+                        <button
+                          onClick={() => handleSaveQualifications(s.id)}
+                          disabled={savingQualificationsFor === s.id || !certDateFor[s.id]}
+                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: savingQualificationsFor === s.id || !certDateFor[s.id] ? 'not-allowed' : 'pointer' }}
+                        >
+                          {savingQualificationsFor === s.id ? 'Saving...' : 'Save cert. date'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {s.qualification?.needsConsultingSupervisor && (
+                      <div>
+                        {s.qualification.consultingSupervisorMet ? (
+                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(26,122,80,0.1)', color: 'var(--spruce)', marginBottom: 8 }}>
+                            ✓ Consulting supervisor: {s.consulting_supervisor_name}
+                          </span>
+                        ) : (
+                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(255,160,0,0.1)', color: 'var(--amber)', marginBottom: 8 }}>
+                            ! Certified &lt;1 year — needs a consulting supervisor with current monthly consultation
+                          </span>
+                        )}
+                        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', margin: '0 0 8px' }}>
+                          Per BACB Handbook: supervisors certified less than one year must receive monthly consultation from a qualified consulting supervisor to provide fieldwork supervision.
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 160px auto', gap: 6 }}>
+                          <input
+                            type="text"
+                            placeholder="Consulting supervisor name"
+                            value={consultingNameFor[s.id] ?? s.consulting_supervisor_name ?? ''}
+                            onChange={e => setConsultingNameFor(prev => ({ ...prev, [s.id]: e.target.value }))}
+                            style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)' }}
+                          />
+                          <input
+                            type="date"
+                            value={consultingDateFor[s.id] ?? s.consulting_supervisor_last_consultation_date ?? ''}
+                            onChange={e => setConsultingDateFor(prev => ({ ...prev, [s.id]: e.target.value }))}
+                            style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)' }}
+                          />
+                          <button
+                            onClick={() => handleSaveQualifications(s.id)}
+                            disabled={savingQualificationsFor === s.id}
+                            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: savingQualificationsFor === s.id ? 'not-allowed' : 'pointer' }}
+                          >
+                            {savingQualificationsFor === s.id ? 'Saving...' : 'Save'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

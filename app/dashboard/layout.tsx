@@ -193,7 +193,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               { label: 'Vault', href: '/dashboard/vault' },
               { label: 'Import', href: '/dashboard/import' },
               { label: 'M-FVF', href: '/dashboard/monthly-verification' },
-              { label: 'F-FVF', href: '/dashboard/bcaba/final-verification' },
+              { label: 'F-FVF', href: '/dashboard/final-verification' },
               { label: 'Billing', href: '/dashboard/billing' },
             ] : role === 'bcaba' ? [
               { label: 'Log hours', href: '/dashboard/bcaba' },
@@ -240,7 +240,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               { label: 'Vault', icon: '▣', href: '/dashboard/vault' },
               { label: 'Import history', icon: '⬆', href: '/dashboard/import' },
               { label: 'M-FVF', icon: '✓', href: '/dashboard/monthly-verification' },
-              { label: 'F-FVF', icon: '◆', href: '/dashboard/bcaba/final-verification' },
+              { label: 'F-FVF', icon: '◆', href: '/dashboard/final-verification' },
             ] : role === 'bcaba' ? [
               { label: 'Log hours', icon: '+', href: '/dashboard/bcaba' },
               { label: 'Accrual record', icon: '↗', href: '/dashboard/compliance?role=bcaba' },

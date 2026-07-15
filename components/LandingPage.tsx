@@ -59,7 +59,7 @@ export default function LandingPage() {
 
   const features = [
     { title: 'Fieldwork logging', tag: 'LOG', color: 'spruce', desc: 'Log restricted, unrestricted, and supervised hours with start/end times, task list area, and setting — in under 30 seconds per entry.' },
-    { title: 'Compliance checks', tag: 'CHK', color: 'sky', desc: 'Every BACB rule — 5% supervision, 50% restricted ceiling, monthly contacts, observation requirements — checked automatically against your real numbers.' },
+    { title: 'Compliance checks', tag: 'CHK', color: 'sky', desc: 'Every BACB rule — 5% supervision, 40% restricted ceiling, monthly contacts, observation requirements — checked automatically against your real numbers.' },
     { title: 'Signed PDF export', tag: 'PDF', color: 'amber', desc: 'One-click monthly or full-record export with digital signature capture — ready the moment BACB or your supervisor asks.' },
     { title: 'Ask Supervisd', tag: 'ASK', color: 'spruce', desc: 'Ask a real BACB handbook question — "is training a caregiver restricted or unrestricted?" — and get a straight, cited answer.' },
     { title: 'Roster tracking', tag: 'ROS', color: 'sky', desc: "Supervising BCBAs see every RBT's compliance status in one table, instead of chasing down spreadsheets from each trainee." },
@@ -222,7 +222,7 @@ export default function LandingPage() {
               <div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--spruce)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 10 }}>Step 1 — your dashboard</div>
                 <h3 style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 800, marginBottom: 14, letterSpacing: '-.01em' }}>Every hour, broken down the way BACB actually reads it.</h3>
-                <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--muted)' }}>Restricted, unrestricted, supervised, independent — split out automatically as you log, with your real percentage against the 50% restricted ceiling and 5% supervision minimum. No more wondering which bucket an hour falls into.</p>
+                <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--muted)' }}>Restricted, unrestricted, supervised, independent — split out automatically as you log, with your real percentage against the 40% restricted ceiling and 5% supervision minimum. No more wondering which bucket an hour falls into.</p>
               </div>
               <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
                 <img src="/images/dashboard-populated.png" alt="Supervisd compliance dashboard showing total hours, supervised hours, and BACB requirement checks" style={{ width: '100%', display: 'block', height: isMobile ? 280 : 400, objectFit: 'cover', objectPosition: 'top' }} />
@@ -259,7 +259,7 @@ export default function LandingPage() {
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>The problem</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 24 : 30, fontWeight: 800, marginBottom: 18, letterSpacing: '-.01em' }}>A missed row in a spreadsheet costs you three months.</h2>
-            <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--muted)', marginBottom: 16 }}>BCBA certification requires 2,000 supervised fieldwork hours (or 1,500 for the concentrated pathway), with at least 5% of those hours under direct supervision and no more than 50% coming from restricted activities. Those are simple rules on paper — until you&apos;re three spreadsheet tabs deep, six months in, and a wrong formula has quietly thrown off your restricted percentage.</p>
+            <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--muted)', marginBottom: 16 }}>BCBA certification requires 2,000 supervised fieldwork hours (or 1,500 for the concentrated pathway), with at least 5% of those hours under direct supervision and no more than 40% coming from restricted activities. Those are simple rules on paper — until you&apos;re three spreadsheet tabs deep, six months in, and a wrong formula has quietly thrown off your restricted percentage.</p>
             <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>And when BACB asks for documentation, you want a signed PDF ready to go — not a scramble through old emails and texts trying to reconstruct what actually happened in March.</p>
           </div>
         </div>

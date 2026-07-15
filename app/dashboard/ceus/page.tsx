@@ -90,7 +90,7 @@ export default function CEUsPage() {
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap' as const, gap: 8 }}>
             <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>
-              Current cycle: {new Date(summary.cycleStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(summary.cycleEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              Current cycle: {new Date(summary.cycleStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })} – {new Date(summary.cycleEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
             </p>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: summary.daysUntilRecertification <= 60 ? 'var(--amber)' : 'var(--muted)' }}>
               {summary.daysUntilRecertification} days until recertification
@@ -175,7 +175,7 @@ export default function CEUsPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                 <span style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 600, color: 'var(--ink)' }}>{Number(c.hours).toFixed(1)}<span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 2 }}>hrs</span></span>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{new Date(c.completion_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{new Date(c.completion_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</span>
               </div>
             </div>
           ))}

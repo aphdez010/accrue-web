@@ -507,7 +507,7 @@ export default function SupervisorTraineesPage() {
                             <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(26,122,80,0.1)', color: 'var(--spruce)' }}>✓ Contract on file</span>
                             {s.contract_signed_date && (
                               <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>
-                                signed {new Date(s.contract_signed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                signed {new Date(s.contract_signed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
                               </span>
                             )}
                             {s.contract_file_url && (
@@ -548,7 +548,7 @@ export default function SupervisorTraineesPage() {
                       <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid ' + (s.is_responsible_supervisor ? 'rgba(26,122,80,0.15)' : 'var(--border)'), display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8 }}>
                         {hasTraining ? (
                           <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(26,122,80,0.1)', color: 'var(--spruce)' }}>
-                            ✓ 8-hr training completed {new Date(s.supervisor_training_date!).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            ✓ 8-hr training completed {new Date(s.supervisor_training_date!).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
                           </span>
                         ) : (
                           <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(255,160,0,0.1)', color: 'var(--amber)' }}>! 8-hr Supervisor Training not on file</span>
@@ -579,7 +579,7 @@ export default function SupervisorTraineesPage() {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8, marginBottom: 8 }}>
                             {s.supervisor_certification_date ? (
                               <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>
-                                Certified {new Date(s.supervisor_certification_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                Certified {new Date(s.supervisor_certification_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
                                 {s.qualification?.isFirstYear && ' · first-year'}
                               </span>
                             ) : (

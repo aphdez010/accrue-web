@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../context/api-context';
+import { useCompliance } from '../../context/compliance-context';
 import SignatureCanvas from 'react-signature-canvas';
 
 const ADJUSTMENT_REASON_LABELS: Record<string, string> = {
@@ -15,10 +16,9 @@ const ADJUSTMENT_REASON_LABELS: Record<string, string> = {
 };
 
 export default function CompliancePage() {
-  const { get, patch } = useApi();
+  const { patch } = useApi();
   const { getToken } = useAuth();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, refetch } = useCompliance();
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [exporting, setExporting] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -36,21 +36,12 @@ export default function CompliancePage() {
 
   const month = selectedMonth;
 
-  const loadCompliance = useCallback(() => {
-    setLoading(true);
-    get('/compliance').then(setData).catch(() => {}).finally(() => setLoading(false));
-  }, [get]);
-
-  useEffect(() => {
-    loadCompliance();
-  }, [loadCompliance]);
-
   const handleSaveStartDate = async () => {
     if (!startDateInput) return;
     setSavingStartDate(true);
     try {
       await patch('/compliance/fieldwork-start-date', { fieldworkStartDate: startDateInput });
-      loadCompliance();
+      refetch();
     } catch (err) {
       console.error('Failed to save fieldwork start date:', err);
       alert('Could not save your fieldwork start date. Please try again.');

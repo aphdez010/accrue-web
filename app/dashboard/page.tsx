@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useApi } from '../context/api-context';
+import { useCompliance } from '../context/compliance-context';
 
 export default function DashboardPage() {
   const api = useApi();
-  const [data, setData] = useState<any>(null);
+  const { data, refetch } = useCompliance();
   const [isMobile, setIsMobile] = useState(false);
   const [trackBusy, setTrackBusy] = useState(false);
   useEffect(() => {
@@ -16,12 +17,6 @@ export default function DashboardPage() {
   const month = new Date().toISOString().slice(0, 7);
   const monthLabel = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
-  const loadCompliance = () => api.get('/compliance').then(setData).catch(() => {});
-
-  useEffect(() => {
-    loadCompliance();
-  }, []);
-
   const d = data;
   const targetHours = d?.totalHoursRequired || 2000;
   const track = d?.track || 'supervised';
@@ -31,7 +26,7 @@ export default function DashboardPage() {
     setTrackBusy(true);
     try {
       await api.patch('/professionals/track', { track: newTrack });
-      await loadCompliance();
+      await refetch();
     } catch {}
     finally { setTrackBusy(false); }
   }

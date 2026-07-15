@@ -1,5 +1,6 @@
 'use client';
 import { ApiProvider } from '../context/api-context';
+import { ComplianceProvider, useCompliance } from '../context/compliance-context';
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -63,8 +64,6 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { signOut } = useClerk();
   const { user } = useUser();
   const [mobileAgentOpen, setMobileAgentOpen] = useState(false);
-  const [totalHours, setTotalHours] = useState<number>(0);
-  const [totalHoursRequired, setTotalHoursRequired] = useState<number>(2000);
   const { getToken } = useAuth();
 
   // Link any pending Stripe checkout session (from the pay-first landing page flow)
@@ -92,19 +91,15 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const fetchHours = async () => {
+    const checkOnboarded = async () => {
       try {
         const token = await getToken();
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
         const meRes = await fetch(`${apiUrl}/professionals/me`, { headers: { Authorization: `Bearer ${token}` } });
         if (meRes.status === 404) { router.push('/onboarding'); return; }
-        const res = await fetch(`${apiUrl}/compliance`, { headers: { Authorization: `Bearer ${token}` } });
-        const d = await res.json();
-        if (d.totalHours !== undefined) setTotalHours(Number(d.totalHours));
-        if (d.totalHoursRequired !== undefined) setTotalHoursRequired(Number(d.totalHoursRequired));
       } catch {}
     };
-    fetchHours();
+    checkOnboarded();
   }, []);
   useEffect(() => {
     if (pathname.startsWith('/dashboard/billing')) return;
@@ -170,6 +165,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <ApiProvider>
+    <ComplianceProvider>
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr 360px', gridTemplateRows: isMobile ? 'auto 1fr' : '1fr', height: '100vh', background: 'var(--bg)', fontFamily: 'var(--sans)' }}>
       {isMobile && (
         <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50, minWidth: 0 }}>
@@ -268,17 +264,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div style={{ margin: 8, padding: 12, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Total accrual</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 500, color: 'var(--ink)' }}>{totalHours.toFixed(0)}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginLeft: 2 }}>/ {totalHoursRequired.toLocaleString()} hrs</span>
-            </div>
-            <div style={{ height: 4, background: 'var(--border2)', borderRadius: 99, overflow: 'hidden', margin: '8px 0' }}>
-              <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: `${Math.min((totalHours / totalHoursRequired) * 100, 100).toFixed(1)}%` }} />
-            </div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>5-yr deadline Aug 2029</div>
-          </div>
+          <SidebarAccrualWidget />
 
           <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between' }}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--spruce-dim)', border: '1px solid var(--spruce)', color: 'var(--spruce)', fontWeight: 600, fontSize: 12, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{(user?.firstName?.[0] || user?.emailAddresses?.[0]?.emailAddress?.[0] || "?").toUpperCase()}</div>
@@ -373,6 +359,30 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         </aside>}
 
       </div>
+    </ComplianceProvider>
     </ApiProvider>
+  );
+}
+
+// Reads from the shared ComplianceProvider rather than fetching independently,
+// so it updates immediately when a track change (or any other compliance-
+// affecting action) happens elsewhere on the dashboard -- see the file header
+// note in context/compliance-context.tsx for the bug this fixes.
+function SidebarAccrualWidget() {
+  const { data } = useCompliance();
+  const totalHours = Number(data?.totalHours || 0);
+  const totalHoursRequired = Number(data?.totalHoursRequired || 2000);
+  return (
+    <div style={{ margin: 8, padding: 12, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Total accrual</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 500, color: 'var(--ink)' }}>{totalHours.toFixed(0)}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginLeft: 2 }}>/ {totalHoursRequired.toLocaleString()} hrs</span>
+      </div>
+      <div style={{ height: 4, background: 'var(--border2)', borderRadius: 99, overflow: 'hidden', margin: '8px 0' }}>
+        <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, var(--spruce), #5BC891)', width: `${Math.min((totalHours / totalHoursRequired) * 100, 100).toFixed(1)}%` }} />
+      </div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>5-yr deadline Aug 2029</div>
+    </div>
   );
 }

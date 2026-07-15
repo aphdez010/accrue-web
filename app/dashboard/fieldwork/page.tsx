@@ -38,6 +38,7 @@ type Supervisor = {
   contract_file_name?: string | null;
   contract_file_url?: string | null;
   supervisor_training_date: string | null;
+  supervisor_user_id?: string | null;
   supervisor_certification_date?: string | null;
   consulting_supervisor_name?: string | null;
   consulting_supervisor_last_consultation_date?: string | null;
@@ -120,6 +121,11 @@ export default function FieldworkPage() {
   const [contractSignedDateFor, setContractSignedDateFor] = useState<Record<number, string>>({});
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
+  // Link-to-account state (email input + submit), keyed by supervisor id
+  const [linkEmailFor, setLinkEmailFor] = useState<Record<number, string>>({});
+  const [linkingFor, setLinkingFor] = useState<number | null>(null);
+  const [linkErrFor, setLinkErrFor] = useState<Record<number, string>>({});
+
   // Training date state, keyed by supervisor id
   const [trainingDateFor, setTrainingDateFor] = useState<Record<number, string>>({});
   const [savingTrainingFor, setSavingTrainingFor] = useState<number | null>(null);
@@ -139,6 +145,21 @@ export default function FieldworkPage() {
   }
 
   useEffect(() => { loadSupervisors(); }, []);
+
+  async function handleLinkSupervisor(supervisorId: number) {
+    const email = linkEmailFor[supervisorId];
+    if (!email) return;
+    setLinkingFor(supervisorId);
+    setLinkErrFor(prev => ({ ...prev, [supervisorId]: '' }));
+    try {
+      await patch('/supervisors/' + supervisorId + '/link', { email });
+      loadSupervisors();
+    } catch (e: any) {
+      setLinkErrFor(prev => ({ ...prev, [supervisorId]: e.message || 'Failed to link account' }));
+    } finally {
+      setLinkingFor(null);
+    }
+  }
 
   async function handleMakeResponsible(supervisorId: number) {
     setReassigningId(supervisorId);
@@ -496,6 +517,40 @@ export default function FieldworkPage() {
                         {savingTrainingFor === s.id ? 'Saving...' : hasTraining ? 'Update date' : 'Save date'}
                       </button>
                     </div>
+                  </div>
+
+                  {/* Link to a real Supervisd account — lets your supervisor independently
+                      review and sign M-FVF/F-FVF as themselves instead of you capturing
+                      both signatures. Optional; only works if they already have an account. */}
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid ' + (s.is_responsible ? 'rgba(26,122,80,0.15)' : 'var(--border)') }}>
+                    {s.supervisor_user_id ? (
+                      <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(26,122,80,0.1)', color: 'var(--spruce)' }}>
+                        ✓ Linked to their own Supervisd account — they'll sign M-FVF/F-FVF themselves
+                      </span>
+                    ) : (
+                      <>
+                        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', margin: '0 0 8px' }}>
+                          If your supervisor has their own Supervisd account, link it so they can review and sign M-FVF/F-FVF themselves.
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr auto', gap: 6 }}>
+                          <input
+                            type="email"
+                            placeholder="supervisor@email.com"
+                            value={linkEmailFor[s.id] || ''}
+                            onChange={e => setLinkEmailFor(prev => ({ ...prev, [s.id]: e.target.value }))}
+                            style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)' }}
+                          />
+                          <button
+                            onClick={() => handleLinkSupervisor(s.id)}
+                            disabled={linkingFor === s.id || !linkEmailFor[s.id]}
+                            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: linkingFor === s.id || !linkEmailFor[s.id] ? 'not-allowed' : 'pointer' }}
+                          >
+                            {linkingFor === s.id ? 'Linking...' : 'Link account'}
+                          </button>
+                        </div>
+                        {linkErrFor[s.id] && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--amber)', margin: '6px 0 0' }}>{linkErrFor[s.id]}</p>}
+                      </>
+                    )}
                   </div>
 
                   {/* Qualifications: certification date + consulting supervisor (first-year rule) */}

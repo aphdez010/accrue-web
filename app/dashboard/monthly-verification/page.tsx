@@ -197,11 +197,19 @@ export default function BcbaMonthlyVerificationPage() {
                       <button onClick={() => openSignModal(v.id, 'trainee')} disabled={!!v.trainee_signed_at} style={{ background: v.trainee_signed_at ? 'rgba(26,122,80,0.1)' : 'var(--spruce)', color: v.trainee_signed_at ? 'var(--spruce)' : '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontFamily: 'var(--mono)', fontSize: 11, cursor: v.trainee_signed_at ? 'default' : 'pointer' }}>
                         {v.trainee_signed_at ? '✓ Trainee signed' : 'Sign as Trainee'}
                       </button>
-                      <button onClick={() => openSignModal(v.id, 'supervisor')} disabled={!!v.supervisor_signed_at} style={{ background: v.supervisor_signed_at ? 'rgba(26,122,80,0.1)' : 'var(--spruce)', color: v.supervisor_signed_at ? 'var(--spruce)' : '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontFamily: 'var(--mono)', fontSize: 11, cursor: v.supervisor_signed_at ? 'default' : 'pointer' }}>
-                        {v.supervisor_signed_at ? '✓ Supervisor signed' : 'Sign as Supervisor'}
-                      </button>
+                      {v.supervisor_user_id ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: v.supervisor_signed_at ? 'var(--spruce)' : 'var(--muted)', padding: '8px 0' }}>
+                          {v.supervisor_signed_at ? '✓ Supervisor signed' : 'Awaiting supervisor — they sign from their own account'}
+                        </span>
+                      ) : (
+                        <button onClick={() => openSignModal(v.id, 'supervisor')} disabled={!!v.supervisor_signed_at} style={{ background: v.supervisor_signed_at ? 'rgba(26,122,80,0.1)' : 'var(--spruce)', color: v.supervisor_signed_at ? 'var(--spruce)' : '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontFamily: 'var(--mono)', fontSize: 11, cursor: v.supervisor_signed_at ? 'default' : 'pointer' }}>
+                          {v.supervisor_signed_at ? '✓ Supervisor signed' : 'Sign as Supervisor'}
+                        </button>
+                      )}
                     </div>
-                    <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>Have your supervisor sign on this device once they've reviewed the hours above.</p>
+                    <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>
+                      {v.supervisor_user_id ? 'Your supervisor is linked to their own account — they can sign from the My Trainees page.' : "Have your supervisor sign on this device once they've reviewed the hours above."}
+                    </p>
                   </div>
                 ))}
               </div>

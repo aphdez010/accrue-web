@@ -289,10 +289,15 @@ function FvCard({ fv, trainee, supervisor, onSignTrainee, onSignSupervisor, onDo
             {!trainee ? '✓ Trainee signed' : 'Sign as Trainee'}
           </button>
         )}
-        {onSignSupervisor && (
+        {onSignSupervisor && !fv.supervisor_user_id && (
           <button onClick={onSignSupervisor} disabled={!supervisor} style={{ background: !supervisor ? 'rgba(26,122,80,0.1)' : 'var(--spruce)', color: !supervisor ? 'var(--spruce)' : '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontFamily: 'var(--mono)', fontSize: 11, cursor: !supervisor ? 'default' : 'pointer' }}>
             {!supervisor ? '✓ Supervisor signed' : 'Sign as Supervisor'}
           </button>
+        )}
+        {onSignSupervisor && fv.supervisor_user_id && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: fv.supervisor_signed_at ? 'var(--spruce)' : 'var(--muted)', padding: '8px 0' }}>
+            {fv.supervisor_signed_at ? '✓ Supervisor signed' : 'Awaiting supervisor — they sign from their own account'}
+          </span>
         )}
         {onDownload && (
           <button onClick={onDownload} style={{ background: 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer' }}>

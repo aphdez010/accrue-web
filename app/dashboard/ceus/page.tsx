@@ -8,15 +8,20 @@ const CATEGORIES = ['ethics', 'supervision', 'behavior_analysis', 'general'];
 const CATEGORY_LABELS: Record<string, string> = { ethics: 'Ethics', supervision: 'Supervision', behavior_analysis: 'Behavior Analysis', general: 'General' };
 
 export default function CEUsPage() {
-  const { get, post } = useApi();
+  const { get, post, patch } = useApi();
   const [ceus, setCeus] = useState<CEU[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ course_title: '', provider: '', hours: '', completion_date: new Date().toISOString().slice(0, 10), category: 'general' });
+  const [summary, setSummary] = useState<any>(null);
+  const [certDate, setCertDate] = useState('');
+  const [recertDate, setRecertDate] = useState('');
+  const [savingCycle, setSavingCycle] = useState(false);
 
   const load = () => get('/ceus').then(r => setCeus(Array.isArray(r) ? r : [])).catch(() => {}).finally(() => setLoading(false));
-  useEffect(() => { load(); }, []);
+  const loadSummary = () => get('/ceus/summary').then((r: any) => setSummary(r)).catch(() => {});
+  useEffect(() => { load(); loadSummary(); }, []);
 
   const totalHours = ceus.reduce((sum, c) => sum + Number(c.hours || 0), 0);
 
@@ -28,10 +33,23 @@ export default function CEUsPage() {
       setForm({ course_title: '', provider: '', hours: '', completion_date: new Date().toISOString().slice(0, 10), category: 'general' });
       setShowForm(false);
       load();
+      loadSummary();
     } catch {
       // Save failed silently — form stays open so the user can retry.
     }
     setSaving(false);
+  };
+
+  const handleSaveCycle = async () => {
+    if (!certDate) return;
+    setSavingCycle(true);
+    try {
+      await patch('/ceus/certification', { certificationDate: certDate, recertificationDate: recertDate || undefined });
+      loadSummary();
+    } catch {
+      // Save failed silently — form stays as-is so the user can retry.
+    }
+    setSavingCycle(false);
   };
 
   const field = { fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', width: '100%', boxSizing: 'border-box' as const, outline: 'none' };
@@ -48,6 +66,63 @@ export default function CEUsPage() {
           {showForm ? 'Cancel' : '+ Add CEU'}
         </button>
       </div>
+
+      {summary && summary.cycleSet === false && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px', marginBottom: 24 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)', margin: '0 0 12px' }}>{summary.message}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, alignItems: 'end', maxWidth: 480 }}>
+            <div>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Certification Date</p>
+              <input type="date" style={field} value={certDate} onChange={e => setCertDate(e.target.value)} />
+            </div>
+            <div>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Next Recert. Date (optional)</p>
+              <input type="date" style={field} value={recertDate} onChange={e => setRecertDate(e.target.value)} />
+            </div>
+            <button onClick={handleSaveCycle} disabled={savingCycle || !certDate} style={{ background: 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontFamily: 'var(--mono)', fontSize: 12, cursor: savingCycle || !certDate ? 'not-allowed' : 'pointer', opacity: !certDate ? 0.5 : 1 }}>
+              {savingCycle ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {summary && summary.cycleSet && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap' as const, gap: 8 }}>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>
+              Current cycle: {new Date(summary.cycleStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – {new Date(summary.cycleEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: summary.daysUntilRecertification <= 60 ? 'var(--amber)' : 'var(--muted)' }}>
+              {summary.daysUntilRecertification} days until recertification
+            </span>
+          </div>
+
+          {[
+            { key: 'total', label: `Total CEUs (${summary.requirements.total} required)`, required: summary.requirements.total },
+            { key: 'ethics', label: `Ethics CEUs (${summary.requirements.ethics} required)`, required: summary.requirements.ethics },
+            { key: 'supervision', label: `Supervision CEUs (${summary.requirements.supervision} required${summary.supervisionRequired ? '' : ' — not yet triggered'})`, required: summary.requirements.supervision },
+          ].map(row => {
+            const progress = summary.progress[row.key];
+            const met = summary.met[row.key];
+            const pct = Math.min(100, (progress / row.required) * 100);
+            return (
+              <div key={row.key} style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{row.label}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: met ? 'var(--spruce)' : 'var(--ink)' }}>{Number(progress).toFixed(1)} / {row.required}</span>
+                </div>
+                <div style={{ height: 6, borderRadius: 3, background: 'var(--bg)', overflow: 'hidden' as const }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: met ? 'var(--spruce)' : 'var(--amber)' }} />
+                </div>
+              </div>
+            );
+          })}
+
+          {!summary.compliant && (
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--amber)', margin: '8px 0 0' }}>! Not yet meeting all requirements for this cycle.</p>
+          )}
+        </div>
+      )}
 
       {showForm && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>

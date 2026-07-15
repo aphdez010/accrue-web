@@ -78,9 +78,7 @@ export default function BcabaPage() {
   const [fieldworkType, setFieldworkType] = useState('supervised');
   const [supFormat, setSupFormat] = useState('individual');
   const [restrictionType, setRestrictionType] = useState('unrestricted');
-  const [clientPresent, setClientPresent] = useState(false);
   const [entrySyncType, setEntrySyncType] = useState('synchronized');
-  const [supervisorPresent, setSupervisorPresent] = useState(false);
   const [activityDesc, setActivityDesc] = useState('');
   const [taskArea, setTaskArea] = useState('');
   const [taskAreaNum, setTaskAreaNum] = useState('');
@@ -119,9 +117,7 @@ export default function BcabaPage() {
         taskListAreaNumber: taskAreaNum ? parseInt(taskAreaNum, 10) : null,
         notes: notes || null,
         restrictionType,
-        clientPresent,
         entrySyncType,
-        supervisorPresent,
         fieldworkType,
       };
       if (editingId) {
@@ -144,9 +140,7 @@ export default function BcabaPage() {
     setFieldworkType(e.fieldwork_type || 'supervised');
     setSupFormat(e.supervision_format || 'individual');
     setRestrictionType(e.restriction_type || 'unrestricted');
-    setClientPresent(!!e.client_present);
     setEntrySyncType(e.entry_sync_type || 'synchronized');
-    setSupervisorPresent(!!e.supervisor_present);
     setActivityDesc(e.activity_description || '');
     setTaskArea(e.task_list_area || '');
     setTaskAreaNum(e.task_list_area_number != null ? String(e.task_list_area_number) : '');
@@ -157,7 +151,7 @@ export default function BcabaPage() {
 
   function cancelEdit() {
     setEditingId(null);
-    setHours(''); setNotes(''); setClientPresent(false); setSupervisorPresent(false);
+    setHours(''); setNotes('');
     setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
     setEntryType('supervised'); setSupFormat('individual'); setRestrictionType('unrestricted');
     setEntrySyncType('synchronized');
@@ -435,24 +429,6 @@ export default function BcabaPage() {
           ))}
         </div>
 
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-            <div onClick={() => setClientPresent(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (clientPresent ? 'var(--spruce)' : 'var(--border)'), background: clientPresent ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-              {clientPresent && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            </div>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Client present during this session</span>
-          </label>
-        </div>
-
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-            <div onClick={() => setSupervisorPresent(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (supervisorPresent ? 'var(--spruce)' : 'var(--border)'), background: supervisorPresent ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-              {supervisorPresent && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            </div>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Supervisor present</span>
-          </label>
-        </div>
-
         <div style={{ marginBottom: 24 }}>
           <label style={lbl}>Notes (optional)</label>
           <input placeholder="Any additional notes" value={notes} onChange={e => setNotes(e.target.value)} style={inp} />
@@ -480,7 +456,7 @@ export default function BcabaPage() {
           <div style={{ overflowX: 'auto' as const }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' as const, fontSize: isMobile ? 11 : 13 }}>
               <thead>
-                <tr>{['Date', 'Type', 'Track', 'Format', 'Hours', 'Restriction', 'Task Area', 'Client', ''].map(h => (
+                <tr>{['Date', 'Type', 'Track', 'Format', 'Hours', 'Restriction', 'Task Area', ''].map(h => (
                   <th key={h} style={{ textAlign: 'left' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
                 ))}</tr>
               </thead>
@@ -496,7 +472,6 @@ export default function BcabaPage() {
                       <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontFamily: 'var(--mono)', background: e.restriction_type === 'unrestricted' ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: e.restriction_type === 'unrestricted' ? 'var(--spruce)' : 'var(--muted)' }}>{e.restriction_type || '-'}</span>
                     </td>
                     <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.task_list_area ? `${e.task_list_area}${e.task_list_area_number ? ' #'+e.task_list_area_number : ''}` : '—'}</td>
-                    <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.client_present ? 'Yes' : 'No'}</td>
                     <td style={{ padding: '12px 0', whiteSpace: 'nowrap' as const }}>
                       <button onClick={() => startEdit(e)} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', cursor: 'pointer', marginRight: 6 }}>
                         Edit

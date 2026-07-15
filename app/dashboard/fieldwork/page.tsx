@@ -101,7 +101,6 @@ export default function FieldworkPage() {
   const [supervisorName, setSupervisorName] = useState('');
   const [supFormat, setSupFormat] = useState('In person');
   const [supervisionGroupType, setSupervisionGroupType] = useState('Individual');
-  const [supervisorPresent, setSupervisorPresent] = useState(false);
   const [setting, setSetting] = useState('Center');
   const [activityDesc, setActivityDesc] = useState('');
   const [taskArea, setTaskArea] = useState('');
@@ -235,7 +234,6 @@ export default function FieldworkPage() {
     setSupervisorName(e.supervisor_name || '');
     setSupFormat(e.supervision_format || 'In person');
     setSupervisionGroupType(e.supervision_group_type || 'Individual');
-    setSupervisorPresent(!!e.supervisor_present);
     setSetting(e.setting || 'Center');
     setActivityDesc(e.activity_description || '');
     setTaskArea(e.task_list_area || '');
@@ -295,7 +293,6 @@ export default function FieldworkPage() {
         monthly_observation: monthlyObs,
         observation_minutes: monthlyObs && observationMinutes ? parseInt(observationMinutes) : null,
         entry_sync_type: entrySyncType,
-        supervisor_present: supervisorPresent,
         supervisor_name: supervised ? (supervisorName || null) : null,
         supervision_group_type: supervised ? supervisionGroupType : null,
         fieldwork_type: entryFieldworkType,
@@ -800,19 +797,8 @@ export default function FieldworkPage() {
           </div>
         )}
 
-        {/* Supervisor Present */}
-        <div style={{ marginTop: supervised ? 0 : 20, marginBottom: 20 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-            <div onClick={() => setSupervisorPresent(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (supervisorPresent ? 'var(--spruce)' : 'var(--border)'), background: supervisorPresent ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-              {supervisorPresent && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L4 7.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            </div>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Supervisor present</span>
-          </label>
-          <p style={helpTxt}>Check this if your supervisor was physically or virtually present during this specific activity — independent of whether the hours are being logged as supervised.</p>
-        </div>
-
         {/* Monthly observation + minutes */}
-        <div style={{ display: 'grid', gridTemplateColumns: monthlyObs ? '1fr 200px' : '1fr', gap: 16, marginBottom: 4, alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: monthlyObs ? '1fr 200px' : '1fr', gap: 16, marginBottom: 4, marginTop: supervised ? 0 : 20, alignItems: 'end' }}>
           <div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
               <div onClick={() => setMonthlyObs(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (monthlyObs ? 'var(--spruce)' : 'var(--border)'), background: monthlyObs ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
@@ -861,7 +847,7 @@ export default function FieldworkPage() {
           <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? 11 : 13 }}>
             <thead>
-              <tr>{['Date','Description','Setting','Hours','Supervised','Format','Present','Task Area','Obs',''].map(h => (
+              <tr>{['Date','Description','Setting','Hours','Supervised','Format','Task Area','Obs',''].map(h => (
                 <th key={h} style={{ textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
               ))}</tr>
             </thead>
@@ -876,7 +862,6 @@ export default function FieldworkPage() {
                     <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontFamily: 'var(--mono)', background: e.supervised ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: e.supervised ? 'var(--spruce)' : 'var(--muted)' }}>{e.supervised ? 'Yes' : 'No'}</span>
                   </td>
                   <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.supervised ? (e.supervision_format || '—') : '—'}</td>
-                  <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11 }}>{e.supervisor_present ? <span style={{ color: 'var(--spruce)' }}>✓</span> : <span style={{ color: 'var(--muted)' }}>—</span>}</td>
                   <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.task_list_area ? `${e.task_list_area}${e.task_list_area_number ? ' #'+e.task_list_area_number : ''}` : '—'}</td>
                   <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11 }}>{e.monthly_observation ? <span style={{ color: 'var(--spruce)' }}>✓{e.observation_minutes ? ` ${e.observation_minutes}m` : ''}</span> : '—'}</td>
                   <td style={{ padding: '12px 0 12px 16px' }}>

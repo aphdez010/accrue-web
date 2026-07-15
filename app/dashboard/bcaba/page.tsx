@@ -2,7 +2,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useApi } from '../../context/api-context';
 
-const ENTRY_TYPES = ['supervised', 'observation'];
+const ENTRY_TYPES = ['supervised', 'independent', 'observation'];
+const FIELDWORK_TYPES = ['supervised', 'concentrated'];
 const SUP_FORMATS = ['individual', 'group'];
 const RESTRICTION_TYPES = ['unrestricted', 'restricted'];
 const SYNC_TYPES = ['asynchronous', 'synchronized'];
@@ -20,7 +21,7 @@ const lbl = { display: 'block' as const, fontFamily: 'var(--mono)', fontSize: 10
 function pad(n: number) { return n < 10 ? '0' + n : String(n); }
 
 export default function BcabaPage() {
-  const { get, post } = useApi();
+  const { get, post, patch, del } = useApi();
   const [entries, setEntries] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [compliance, setCompliance] = useState<any>(null);
@@ -51,6 +52,7 @@ export default function BcabaPage() {
         return;
       }
       setMyTraineeId(trainee.id);
+      if (trainee.fieldwork_type) setFieldworkType(trainee.fieldwork_type);
       return get('/bcaba/trainees/' + trainee.id + '/supervisors').then((r: any) => {
         const list = Array.isArray(r?.supervisors) ? r.supervisors : [];
         const responsible = list.find((s: any) => s.is_responsible_supervisor);
@@ -73,6 +75,7 @@ export default function BcabaPage() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [hours, setHours] = useState('');
   const [entryType, setEntryType] = useState('supervised');
+  const [fieldworkType, setFieldworkType] = useState('supervised');
   const [supFormat, setSupFormat] = useState('individual');
   const [restrictionType, setRestrictionType] = useState('unrestricted');
   const [clientPresent, setClientPresent] = useState(false);
@@ -82,6 +85,9 @@ export default function BcabaPage() {
   const [taskArea, setTaskArea] = useState('');
   const [taskAreaNum, setTaskAreaNum] = useState('');
   const [notes, setNotes] = useState('');
+  const [editingId, setEditingId] = useState<string | number | null>(null);
+  const [combinedProgress, setCombinedProgress] = useState<any>(null);
+  const [byType, setByType] = useState<any>(null);
 
   const load = () => {
     if (!myTraineeId) return;
@@ -89,6 +95,8 @@ export default function BcabaPage() {
       setEntries(Array.isArray(r?.entries) ? r.entries : []);
       setSummary(r?.summary || null);
       setCompliance(r?.compliance || null);
+      setByType(r?.byType || null);
+      setCombinedProgress(r?.combinedProgress || null);
     }).catch((e: any) => console.error('Failed to load monthly entries:', e));
   };
 
@@ -98,7 +106,7 @@ export default function BcabaPage() {
     if (!date || !hours || !myTraineeId || !responsibleSupervisorId) return;
     setBusy(true); setErr('');
     try {
-      await post('/bcaba/fieldwork-entries', {
+      const body = {
         traineeId: myTraineeId,
         supervisorId: responsibleSupervisorId,
         entryDate: date,
@@ -114,13 +122,55 @@ export default function BcabaPage() {
         clientPresent,
         entrySyncType,
         supervisorPresent,
-      });
-      setHours(''); setNotes(''); setClientPresent(false); setSupervisorPresent(false);
-      setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
+        fieldworkType,
+      };
+      if (editingId) {
+        await patch('/bcaba/fieldwork-entries/' + editingId, body);
+      } else {
+        await post('/bcaba/fieldwork-entries', body);
+      }
+      cancelEdit();
       setOk(true); setTimeout(() => setOk(false), 3000);
       load();
     } catch (e: any) { setErr(e.message || 'Error'); }
     finally { setBusy(false); }
+  }
+
+  function startEdit(e: any) {
+    setEditingId(e.id);
+    setDate(String(e.entry_date || '').slice(0, 10));
+    setHours(e.hours != null ? String(e.hours) : '');
+    setEntryType(e.entry_type || 'supervised');
+    setFieldworkType(e.fieldwork_type || 'supervised');
+    setSupFormat(e.supervision_format || 'individual');
+    setRestrictionType(e.restriction_type || 'unrestricted');
+    setClientPresent(!!e.client_present);
+    setEntrySyncType(e.entry_sync_type || 'synchronized');
+    setSupervisorPresent(!!e.supervisor_present);
+    setActivityDesc(e.activity_description || '');
+    setTaskArea(e.task_list_area || '');
+    setTaskAreaNum(e.task_list_area_number != null ? String(e.task_list_area_number) : '');
+    setNotes(e.notes || '');
+    const form = document.getElementById('bcaba-log-form');
+    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setHours(''); setNotes(''); setClientPresent(false); setSupervisorPresent(false);
+    setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
+    setEntryType('supervised'); setSupFormat('individual'); setRestrictionType('unrestricted');
+    setEntrySyncType('synchronized');
+  }
+
+  async function deleteEntry(id: number | string) {
+    if (!confirm('Delete this fieldwork entry? This cannot be undone.')) return;
+    try {
+      await del('/bcaba/fieldwork-entries/' + id);
+      load();
+    } catch (e: any) {
+      setErr(e.message || 'Failed to delete entry');
+    }
   }
 
   const unrestrictedPct = summary ? Math.round((summary.unrestrictedPct || 0) * 100) : 0;
@@ -283,6 +333,18 @@ export default function BcabaPage() {
         </div>
       </div>
 
+      {combinedProgress && (combinedProgress.supervisedHours > 0 || combinedProgress.concentratedHours > 0) && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '20px 28px', marginBottom: 24, minWidth: 0 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 10 }}>All-Time Combined Progress</p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: '0 0 8px' }}>
+            {Number(combinedProgress.supervisedHours).toFixed(1)} Supervised hrs + {Number(combinedProgress.concentratedHours).toFixed(1)} Concentrated hrs × 1.3 = <strong style={{ color: 'var(--ink)' }}>{Number(combinedProgress.adjustedTotal).toFixed(1)}</strong> hrs toward your 1,300-hr target
+          </p>
+          <div style={{ height: 6, borderRadius: 3, background: 'var(--bg)', overflow: 'hidden' as const }}>
+            <div style={{ height: '100%', width: `${Math.min(100, (combinedProgress.adjustedTotal / 1300) * 100)}%`, background: combinedProgress.meetsMinimum ? 'var(--spruce)' : 'var(--sky)' }} />
+          </div>
+        </div>
+      )}
+
       {compliance && !compliance.compliant && compliance.issues?.length > 0 && (
         <div style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid var(--amber)', borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--amber)', margin: 0 }}>
@@ -291,8 +353,22 @@ export default function BcabaPage() {
         </div>
       )}
 
+      {byType && byType.supervised.summary.totalHours > 0 && byType.concentrated.summary.totalHours > 0 && (
+        <div style={{ background: 'rgba(45,143,214,0.06)', border: '1px solid var(--sky)', borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--sky)', margin: '0 0 8px' }}>
+            You logged both tracks this month — each is checked against its own rules:
+          </p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: '0 0 4px' }}>
+            Supervised: {Number(byType.supervised.summary.totalHours).toFixed(1)} hrs — {byType.supervised.compliance.compliant ? 'compliant' : `open: ${byType.supervised.compliance.issues.map((i: string) => i.replace(/_/g, ' ')).join(', ')}`}
+          </p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: 0 }}>
+            Concentrated: {Number(byType.concentrated.summary.totalHours).toFixed(1)} hrs — {byType.concentrated.compliance.compliant ? 'compliant' : `open: ${byType.concentrated.compliance.issues.map((i: string) => i.replace(/_/g, ' ')).join(', ')}`}
+          </p>
+        </div>
+      )}
+
       <div id="bcaba-log-form" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px 16px' : '28px 32px', marginBottom: 24, minWidth: 0 }}>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>Log Entry — {date}</p>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>{editingId ? 'Edit Entry' : 'Log Entry'} — {date}</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <div style={{ minWidth: 0 }}>
@@ -309,7 +385,13 @@ export default function BcabaPage() {
           <div style={{ minWidth: 0 }}>
             <label style={lbl}>Session Type</label>
             <select value={entryType} onChange={e => setEntryType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-              {ENTRY_TYPES.map(t => <option key={t} value={t}>{t === 'supervised' ? 'Supervised session' : 'Observation'}</option>)}
+              {ENTRY_TYPES.map(t => <option key={t} value={t}>{t === 'supervised' ? 'Supervised session' : t === 'independent' ? 'Independent (unsupervised)' : 'Observation'}</option>)}
+            </select>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <label style={lbl}>Fieldwork Track</label>
+            <select value={fieldworkType} onChange={e => setFieldworkType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+              {FIELDWORK_TYPES.map(t => <option key={t} value={t}>{t === 'supervised' ? 'Supervised (1,300 hrs)' : 'Concentrated (1,000 hrs)'}</option>)}
             </select>
           </div>
           <div style={{ minWidth: 0 }}>
@@ -378,8 +460,13 @@ export default function BcabaPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' as const }}>
           <button onClick={submit} disabled={busy || !hours || !date || !myTraineeId || !responsibleSupervisorId} style={{ background: busy ? 'var(--muted)' : 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '11px 28px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '.06em', cursor: (busy || !myTraineeId || !responsibleSupervisorId) ? 'not-allowed' : 'pointer' }}>
-            {busy ? 'Logging...' : loadingIdentity ? 'Loading...' : 'Log Entry'}
+            {busy ? (editingId ? 'Updating...' : 'Logging...') : loadingIdentity ? 'Loading...' : (editingId ? 'Update Entry' : 'Log Entry')}
           </button>
+          {editingId && (
+            <button onClick={cancelEdit} style={{ background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 8, padding: '11px 20px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '.06em', cursor: 'pointer' }}>
+              Cancel
+            </button>
+          )}
           {ok && <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--spruce)' }}>✓ Entry logged</span>}
           {err && <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--amber)' }}>{err}</span>}
         </div>
@@ -393,7 +480,7 @@ export default function BcabaPage() {
           <div style={{ overflowX: 'auto' as const }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' as const, fontSize: isMobile ? 11 : 13 }}>
               <thead>
-                <tr>{['Date', 'Type', 'Format', 'Hours', 'Restriction', 'Task Area', 'Client'].map(h => (
+                <tr>{['Date', 'Type', 'Track', 'Format', 'Hours', 'Restriction', 'Task Area', 'Client', ''].map(h => (
                   <th key={h} style={{ textAlign: 'left' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
                 ))}</tr>
               </thead>
@@ -402,13 +489,22 @@ export default function BcabaPage() {
                   <tr key={e.id || i} style={{ borderBottom: i < entries.length - 1 ? '1px solid var(--border)' : 'none' }}>
                     <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>{String(e.entry_date || '').slice(0, 10)}</td>
                     <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.entry_type}</td>
+                    <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{(e.fieldwork_type || 'supervised') === 'concentrated' ? 'Concentrated' : 'Supervised'}</td>
                     <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.supervision_format}</td>
                     <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--display)', fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{Number(e.hours || 0).toFixed(1)}</td>
                     <td style={{ padding: '12px 16px 12px 0' }}>
                       <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontFamily: 'var(--mono)', background: e.restriction_type === 'unrestricted' ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: e.restriction_type === 'unrestricted' ? 'var(--spruce)' : 'var(--muted)' }}>{e.restriction_type || '-'}</span>
                     </td>
                     <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.task_list_area ? `${e.task_list_area}${e.task_list_area_number ? ' #'+e.task_list_area_number : ''}` : '—'}</td>
-                    <td style={{ padding: '12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.client_present ? 'Yes' : 'No'}</td>
+                    <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.client_present ? 'Yes' : 'No'}</td>
+                    <td style={{ padding: '12px 0', whiteSpace: 'nowrap' as const }}>
+                      <button onClick={() => startEdit(e)} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', cursor: 'pointer', marginRight: 6 }}>
+                        Edit
+                      </button>
+                      <button onClick={() => deleteEntry(e.id)} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--amber)', cursor: 'pointer' }}>
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -191,7 +191,7 @@ export default function MonthlyVerificationPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' as const, gap: 12, marginBottom: 12 }}>
                       <div>
                         <p style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
-                          {new Date(v.month_year).toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+                          {new Date(v.month_year).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}
                         </p>
                         <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: '4px 0 0' }}>
                           Supervised: {Number(v.supervised_hours).toFixed(1)}h · Independent: {Number(v.independent_hours).toFixed(1)}h · Individual: {Number(v.individual_supervision_hours).toFixed(1)}h · Group: {Number(v.group_supervision_hours).toFixed(1)}h
@@ -235,7 +235,7 @@ export default function MonthlyVerificationPage() {
                     {v.status === 'draft' && v.supervisor_signed_at && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
                         <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--sky)', margin: 0 }}>✓ Supervisor signed — waiting on trainee signature</p>
-                        <button onClick={() => downloadPdf(v.id, new Date(v.month_year).toLocaleString('en-US', { month: 'long', year: 'numeric' }))} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 12px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', cursor: 'pointer' }}>
+                        <button onClick={() => downloadPdf(v.id, new Date(v.month_year).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }))} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 12px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', cursor: 'pointer' }}>
                           Download PDF
                         </button>
                       </div>
@@ -246,7 +246,7 @@ export default function MonthlyVerificationPage() {
                         <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--spruce)', margin: 0 }}>
                           ✓ Fully signed — trainee {new Date(v.trainee_signed_at).toLocaleDateString()}, supervisor {new Date(v.supervisor_signed_at).toLocaleDateString()}
                         </p>
-                        <button onClick={() => downloadPdf(v.id, new Date(v.month_year).toLocaleString('en-US', { month: 'long', year: 'numeric' }))} style={{ background: 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer' }}>
+                        <button onClick={() => downloadPdf(v.id, new Date(v.month_year).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }))} style={{ background: 'var(--spruce)', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer' }}>
                           Download PDF
                         </button>
                       </div>

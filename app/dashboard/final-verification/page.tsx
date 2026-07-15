@@ -269,7 +269,7 @@ function FvCard({ fv, trainee, supervisor, onSignTrainee, onSignSupervisor, onDo
     <div style={{ background: 'var(--surface)', border: '1px solid ' + (fv.status === 'draft' ? 'var(--amber)' : 'var(--border)'), borderRadius: 12, padding: '20px 24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap' as const, gap: 8 }}>
         <p style={{ fontFamily: 'var(--display)', fontSize: 16, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
-          {fv.organization_name || fv.supervisor_name || 'Final Verification'} — {new Date(fv.period_start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} to {new Date(fv.period_end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+          {fv.organization_name || fv.supervisor_name || 'Final Verification'} — {new Date(fv.period_start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })} to {new Date(fv.period_end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })}
         </p>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 10, padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase' as const, background: colors.bg, color: colors.color }}>
           {statusLabels[fv.status] || fv.status}

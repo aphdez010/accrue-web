@@ -275,7 +275,7 @@ export default function CompliancePage() {
               ) : d.projectedCompletionDate ? (
                 <>
                   <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Projected completion</p>
-                  <p style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{d.projectedCompletionDate ? new Date(d.projectedCompletionDate + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''}</p>
+                  <p style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>{d.projectedCompletionDate ? new Date(d.projectedCompletionDate + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : ''}</p>
                   <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>based on current pace</p>
                 </>
               ) : (
@@ -283,7 +283,7 @@ export default function CompliancePage() {
               )}
               {d.fieldworkDeadline && (
                 <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                  5-year fieldwork deadline: {new Date(d.fieldworkDeadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  5-year fieldwork deadline: {new Date(d.fieldworkDeadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
                   {d.fieldworkStartDateSource === 'inferred_from_earliest_entry' && ' (estimated)'}
                 </p>
               )}

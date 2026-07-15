@@ -524,9 +524,17 @@ export default function FieldworkPage() {
                       both signatures. Optional; only works if they already have an account. */}
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid ' + (s.is_responsible ? 'rgba(26,122,80,0.15)' : 'var(--border)') }}>
                     {s.supervisor_user_id ? (
-                      <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(26,122,80,0.1)', color: 'var(--spruce)' }}>
-                        ✓ Linked to their own Supervisd account — they'll sign M-FVF/F-FVF themselves
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+                        <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(26,122,80,0.1)', color: 'var(--spruce)' }}>
+                          ✓ Linked to their own Supervisd account — they'll sign M-FVF/F-FVF themselves
+                        </span>
+                        <button
+                          onClick={async () => { await patch('/supervisors/' + s.id + '/unlink', {}); loadSupervisors(); }}
+                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '2px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', cursor: 'pointer' }}
+                        >
+                          Unlink
+                        </button>
+                      </div>
                     ) : (
                       <>
                         <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', margin: '0 0 8px' }}>

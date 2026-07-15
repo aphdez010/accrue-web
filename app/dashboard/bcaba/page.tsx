@@ -337,10 +337,10 @@ export default function BcabaPage() {
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '20px 28px', marginBottom: 24, minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 10 }}>All-Time Combined Progress</p>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: '0 0 8px' }}>
-            {Number(combinedProgress.supervisedHours).toFixed(1)} Supervised hrs + {Number(combinedProgress.concentratedHours).toFixed(1)} Concentrated hrs × 1.3 = <strong style={{ color: 'var(--ink)' }}>{Number(combinedProgress.adjustedTotal).toFixed(1)}</strong> hrs toward your 1,300-hr target
+            {Number(combinedProgress.supervisedHours).toFixed(1)} Supervised hrs + {Number(combinedProgress.concentratedHours).toFixed(1)} Concentrated hrs × 1.3 = <strong style={{ color: 'var(--ink)' }}>{Number(combinedProgress.combinedTotal).toFixed(1)}</strong> hrs toward your 1,300-hr target
           </p>
           <div style={{ height: 6, borderRadius: 3, background: 'var(--bg)', overflow: 'hidden' as const }}>
-            <div style={{ height: '100%', width: `${Math.min(100, (combinedProgress.adjustedTotal / 1300) * 100)}%`, background: combinedProgress.meetsMinimum ? 'var(--spruce)' : 'var(--sky)' }} />
+            <div style={{ height: '100%', width: `${Math.min(100, (combinedProgress.combinedTotal / 1300) * 100)}%`, background: combinedProgress.meetsRequirement ? 'var(--spruce)' : 'var(--sky)' }} />
           </div>
         </div>
       )}

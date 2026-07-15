@@ -806,7 +806,7 @@ export default function FieldworkPage() {
               </div>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>Monthly observation completed</span>
             </label>
-            <p style={helpTxt}>This is the once-per-month required direct observation of you working with a client — separate from marking "Supervisor present" above on individual entries.</p>
+            <p style={helpTxt}>This is the once-per-month required direct observation of you working with a client.</p>
           </div>
           {monthlyObs && (
             <div style={{ minWidth: 0 }}>

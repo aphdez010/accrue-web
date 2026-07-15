@@ -176,9 +176,9 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50, minWidth: 0 }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
-            <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2 }}>
+            <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2, overflowX: 'auto' as const, maxWidth: '50vw' }}>
               {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
-                <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 9.5px var(--sans)', lineHeight: 1.2, padding: '5px 8px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
+                <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 9.5px var(--sans)', lineHeight: 1.2, padding: '5px 7px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
                   {roleLabels[r]}
                 </button>
               ))}
@@ -231,9 +231,9 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '.15em', textTransform: 'uppercase', marginTop: 2 }}>BACB Compliance Platform</div>
           </div>
 
-          <div style={{ margin: '12px 12px 4px', background: 'var(--bg)', borderRadius: 10, padding: 3, display: 'flex' }}>
+          <div style={{ margin: '12px 12px 4px', background: 'var(--bg)', borderRadius: 10, padding: 4, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
             {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
-              <button key={r} onClick={() => handleRoleSwitch(r)} style={{ flex: 1, border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10.5px var(--sans)', lineHeight: 1.2, padding: '7px 2px', borderRadius: 8, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
+              <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', textAlign: 'left' as const, padding: '9px 10px', borderRadius: 7, cursor: 'pointer' }}>
                 {roleLabels[r]}
               </button>
             ))}

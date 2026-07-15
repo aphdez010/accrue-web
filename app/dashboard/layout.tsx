@@ -1,7 +1,7 @@
 'use client';
 import { ApiProvider } from '../context/api-context';
 import { ComplianceProvider, useCompliance } from '../context/compliance-context';
-import { useState, useRef, useEffect, Suspense } from 'react';
+import { useState, useRef, useEffect, Suspense, Fragment } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { useAuth, useClerk, useUser } from '@clerk/nextjs';
@@ -18,7 +18,12 @@ function getRoleFromPath(pathname: string, roleParam: string | null): Role {
   return 'trainee';
 }
 
-const roleLabels: Record<Role, string> = { trainee: 'Trainee', bcaba: 'BCaBA', bcba: 'BCBA' };
+const roleLabels: Record<Role, string> = { trainee: 'BCBA Trainee', bcaba: 'BCaBA Trainee', bcba: 'Supervisor' };
+const roleCaptions: Record<Role, string> = {
+  trainee: 'Logging your own BCBA fieldwork hours',
+  bcaba: 'Logging your own BCaBA fieldwork hours',
+  bcba: 'Supervising BCaBA and BCBA trainees',
+};
 
 // Where clicking each role tab should actually take you. Previously the tabs
 // only updated local state (which relabeled the sidebar links) without
@@ -173,7 +178,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
             <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2 }}>
               {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
-                <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10px var(--sans)', padding: '5px 9px', borderRadius: 6, cursor: 'pointer' }}>
+                <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 9.5px var(--sans)', lineHeight: 1.2, padding: '5px 8px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
                   {roleLabels[r]}
                 </button>
               ))}
@@ -202,18 +207,18 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               { label: 'F-FVF', href: '/dashboard/bcaba/final-verification' },
             ] : [
               { label: 'Today', href: '/dashboard' },
-              { label: 'Roster', href: '/dashboard/roster' },
-              { label: 'Sign forms', href: '/dashboard/forms' },
-              { label: 'Records', href: '/dashboard/records' },
               { label: 'My CEUs', href: '/dashboard/ceus' },
               { label: 'My BCaBA Trainees', href: '/dashboard/bcaba/trainees' },
               { label: 'My BCBA Trainees', href: '/dashboard/bcba/trainees' },
               { label: 'Invoices', href: '/dashboard/bcaba/invoices' },
               { label: 'M-FVF', href: '/dashboard/bcaba/monthly-verification' },
               { label: 'F-FVF', href: '/dashboard/bcaba/final-verification' },
+              { label: 'RBT Roster', href: '/dashboard/roster' },
+              { label: 'RBT Sign forms', href: '/dashboard/forms' },
+              { label: 'RBT Records', href: '/dashboard/records' },
             ]).map(item => (
-              <a key={item.label} href={item.href} style={{ display: 'inline-block', padding: '6px 14px', borderRadius: 20, background: pathname === item.href ? 'var(--spruce)' : 'var(--bg)', border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 11, color: pathname === item.href ? '#fff' : 'var(--ink)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {item.label}
+              <a key={item.label} href={item.href} style={{ display: 'inline-block', padding: '6px 14px', borderRadius: 20, background: pathname === item.href ? 'var(--spruce)' : 'var(--bg)', border: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: 11, color: pathname === item.href ? '#fff' : item.label.startsWith('RBT') ? 'var(--muted)' : 'var(--ink)', opacity: item.label.startsWith('RBT') && pathname !== item.href ? 0.6 : 1, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {item.label.replace('RBT ', '')}
               </a>
             ))}
           </div>
@@ -226,13 +231,16 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '.15em', textTransform: 'uppercase', marginTop: 2 }}>BACB Compliance Platform</div>
           </div>
 
-          <div style={{ margin: 12, background: 'var(--bg)', borderRadius: 10, padding: 3, display: 'flex' }}>
+          <div style={{ margin: '12px 12px 4px', background: 'var(--bg)', borderRadius: 10, padding: 3, display: 'flex' }}>
             {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
-              <button key={r} onClick={() => handleRoleSwitch(r)} style={{ flex: 1, border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 11px var(--sans)', padding: '7px 4px', borderRadius: 8, cursor: 'pointer' }}>
+              <button key={r} onClick={() => handleRoleSwitch(r)} style={{ flex: 1, border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 10.5px var(--sans)', lineHeight: 1.2, padding: '7px 2px', borderRadius: 8, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
                 {roleLabels[r]}
               </button>
             ))}
           </div>
+          <p style={{ margin: '0 12px 12px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.4 }}>
+            {roleCaptions[role]}
+          </p>
 
           <nav style={{ padding: 8, flex: 1 }}>
             {(role === 'trainee' ? [
@@ -249,20 +257,25 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               { label: 'F-FVF', icon: '◆', href: '/dashboard/bcaba/final-verification' },
             ] : [
               { label: 'Today', icon: '◎', href: '/dashboard' },
-              { label: 'Roster', icon: '◉', href: '/dashboard/roster' },
-              { label: 'Sign forms', icon: '✦', href: '/dashboard/forms' },
-              { label: 'Records', icon: '▣', href: '/dashboard/records' },
               { label: 'My CEUs', icon: '↗', href: '/dashboard/ceus' },
               { label: 'My BCaBA Trainees', icon: '◈', href: '/dashboard/bcaba/trainees' },
               { label: 'My BCBA Trainees', icon: '◈', href: '/dashboard/bcba/trainees' },
               { label: 'Invoices', icon: '$', href: '/dashboard/bcaba/invoices' },
               { label: 'M-FVF', icon: '✓', href: '/dashboard/bcaba/monthly-verification' },
               { label: 'F-FVF', icon: '◆', href: '/dashboard/bcaba/final-verification' },
-            ]).map(item => (
-              <a key={item.label} href={item.href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'var(--muted)', fontWeight: 500, marginBottom: 2, textDecoration: 'none', fontSize: 13.5, transition: 'all .15s' }}>
-                <span style={{ width: 18, textAlign: 'center', fontSize: 15 }}>{item.icon}</span>
-                {item.label}
-              </a>
+              { label: 'RBT Roster', icon: '◉', href: '/dashboard/roster' },
+              { label: 'RBT Sign forms', icon: '✦', href: '/dashboard/forms' },
+              { label: 'RBT Records', icon: '▣', href: '/dashboard/records' },
+            ]).map((item, i, arr) => (
+              <Fragment key={item.label}>
+                {item.label.startsWith('RBT') && !arr[i - 1]?.label.startsWith('RBT') && (
+                  <p style={{ fontFamily: 'var(--mono)', fontSize: 9, textTransform: 'uppercase' as const, letterSpacing: '.08em', color: 'var(--muted)', margin: '14px 12px 6px', opacity: 0.7 }}>Not yet available</p>
+                )}
+                <a href={item.href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'var(--muted)', fontWeight: 500, marginBottom: 2, textDecoration: 'none', fontSize: 13.5, transition: 'all .15s', opacity: item.label.startsWith('RBT') ? 0.55 : 1 }}>
+                  <span style={{ width: 18, textAlign: 'center', fontSize: 15 }}>{item.icon}</span>
+                  {item.label.replace('RBT ', '')}
+                </a>
+              </Fragment>
             ))}
           </nav>
 

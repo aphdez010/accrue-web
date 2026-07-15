@@ -54,6 +54,7 @@ export default function FieldworkPage() {
   const { get, post, patch } = useApi();
   const { getToken } = useAuth();
   const [entries, setEntries] = useState<any[]>([]);
+  const [lastEntry, setLastEntry] = useState<any>(null);
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
   const [ok, setOk] = useState(false);
@@ -295,6 +296,10 @@ export default function FieldworkPage() {
     const list = Array.isArray(r) ? r : Array.isArray(r?.entries) ? r.entries : [];
     setEntries(list);
     setTotal(list.reduce((s: number, e: any) => s + Number(e.hours || 0), 0));
+    // Entries come back sorted by entry_date DESC, so list[0] is this month's
+    // most recent — seed the "Duplicate last entry" shortcut from it so it
+    // works on first load, not just after a submission this session.
+    if (list.length > 0) setLastEntry((prev: any) => prev || list[0]);
   }).catch(() => {});
 
   useEffect(() => { load(); }, [viewYear, viewMonth]);
@@ -322,6 +327,10 @@ export default function FieldworkPage() {
         await patch('/fieldwork/' + editingId, body);
       } else {
         await post('/fieldwork', body);
+        // Remember this submission (not edits) as the source for "Duplicate
+        // last entry" — most fields tend to repeat session-to-session for the
+        // same trainee/supervisor/setting routine.
+        setLastEntry({ ...body, supervisor_name: supervisorName, supervision_format: supFormat, supervision_group_type: supervisionGroupType, entry_sync_type: entrySyncType, task_list_area: taskArea, task_list_area_number: taskAreaNum, fieldwork_type: entryFieldworkType, experience_type: type, setting });
       }
       setEditingId(null);
       setHours(''); setStartTime(''); setEndTime(''); setNotes('');
@@ -333,6 +342,27 @@ export default function FieldworkPage() {
       loadSupervisors();
     } catch (e: any) { setErr(e.message || 'Error'); }
     finally { setBusy(false); }
+  }
+
+  function duplicateLastEntry() {
+    if (!lastEntry) return;
+    setDate(new Date().toISOString().slice(0, 10));
+    setStartTime(''); setEndTime(''); setHours('');
+    setType(lastEntry.experience_type || 'Unrestricted Hours');
+    setEntrySyncType(lastEntry.entry_sync_type || 'Synchronized');
+    setSupervised(!!lastEntry.supervised);
+    setSupervisorName(lastEntry.supervisor_name || '');
+    setSupFormat(lastEntry.supervision_format || 'In person');
+    setSupervisionGroupType(lastEntry.supervision_group_type || 'Individual');
+    setSetting(lastEntry.setting || 'Center');
+    setTaskArea(lastEntry.task_list_area || '');
+    setTaskAreaNum(lastEntry.task_list_area_number != null ? String(lastEntry.task_list_area_number) : '');
+    setEntryFieldworkType(lastEntry.fieldwork_type === 'concentrated' ? 'concentrated' : 'supervised');
+    // Activity description, notes, and observation are entry-specific — left
+    // blank rather than copied, so they don't get silently reused.
+    setActivityDesc(''); setNotes(''); setMonthlyObs(false); setObservationMinutes('');
+    const form = document.getElementById('fieldwork-log-form');
+    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   const derivedStats = useMemo(() => {
@@ -736,7 +766,14 @@ export default function FieldworkPage() {
 
       {/* Log entry form */}
       <div id="fieldwork-log-form" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px 16px' : '28px 32px', marginBottom: 24, minWidth: 0 }}>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>{editingId ? 'Edit Entry' : 'Log Entry'} — {date}</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8, marginBottom: 20 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>{editingId ? 'Edit Entry' : 'Log Entry'} — {date}</p>
+          {!editingId && lastEntry && (
+            <button onClick={duplicateLastEntry} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--sky)', cursor: 'pointer' }}>
+              ⟲ Duplicate last entry
+            </button>
+          )}
+        </div>
 
         {/* Row 1: Date + Start + End + Hours */}
         {isMobile ? (

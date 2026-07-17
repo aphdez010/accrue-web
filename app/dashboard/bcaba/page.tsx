@@ -48,7 +48,7 @@ export default function BcabaPage() {
         return;
       }
       setMyTraineeId(trainee.id);
-      if (trainee.fieldwork_type) setFieldworkType(trainee.fieldwork_type);
+      if (trainee.fieldwork_type) { setFieldworkType(trainee.fieldwork_type); setTrackState(trainee.fieldwork_type === 'concentrated' ? 'concentrated' : 'supervised'); }
       return get('/bcaba/trainees/' + trainee.id + '/supervisors').then((r: any) => {
         const list = Array.isArray(r?.supervisors) ? r.supervisors : [];
         const responsible = list.find((s: any) => s.is_responsible_supervisor);
@@ -72,6 +72,8 @@ export default function BcabaPage() {
   const [hours, setHours] = useState('');
   const [entryType, setEntryType] = useState('supervised');
   const [fieldworkType, setFieldworkType] = useState('supervised');
+  const [track, setTrackState] = useState<'supervised' | 'concentrated'>('supervised');
+  const [trackBusy, setTrackBusy] = useState(false);
   const [supFormat, setSupFormat] = useState('individual');
   const [restrictionType, setRestrictionType] = useState('unrestricted');
   const [entrySyncType, setEntrySyncType] = useState('synchronized');
@@ -134,6 +136,21 @@ export default function BcabaPage() {
       load();
     } catch (e: any) { setErr(e.message || 'Error'); }
     finally { setBusy(false); }
+  }
+
+  async function changeTrack(newTrack: 'supervised' | 'concentrated') {
+    if (newTrack === track || trackBusy || !myTraineeId) return;
+    setTrackBusy(true); setErr('');
+    try {
+      await patch('/bcaba/trainees/' + myTraineeId + '/track', { track: newTrack });
+      setTrackState(newTrack);
+      setFieldworkType(newTrack);
+      load();
+    } catch (e: any) {
+      setErr(e.message || 'Failed to change track');
+    } finally {
+      setTrackBusy(false);
+    }
   }
 
   function startEdit(e: any) {
@@ -232,7 +249,16 @@ export default function BcabaPage() {
   return (
     <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 960, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>BCaBA Fieldwork</p>
-      <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 24px' }}>Fieldwork Calendar</h1>
+      <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 16px' }}>Fieldwork Calendar</h1>
+
+      <div style={{ display: 'inline-flex', gap: 4, background: 'var(--bg)', padding: 4, borderRadius: 10, marginBottom: 24 }}>
+        <button onClick={() => changeTrack('supervised')} disabled={trackBusy} style={{ border: 0, background: track === 'supervised' ? 'var(--spruce)' : 'transparent', color: track === 'supervised' ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', padding: '8px 16px', borderRadius: 8, cursor: trackBusy ? 'not-allowed' : 'pointer' }}>
+          Supervised · 1,300 hrs
+        </button>
+        <button onClick={() => changeTrack('concentrated')} disabled={trackBusy} style={{ border: 0, background: track === 'concentrated' ? 'var(--spruce)' : 'transparent', color: track === 'concentrated' ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', padding: '8px 16px', borderRadius: 8, cursor: trackBusy ? 'not-allowed' : 'pointer' }}>
+          Concentrated · 1,000 hrs
+        </button>
+      </div>
 
       {identityErr && (
         <div style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid var(--amber)', borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
@@ -348,10 +374,10 @@ export default function BcabaPage() {
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px 12px' : '20px 28px', marginBottom: 24, minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 10 }}>All-Time Combined Progress</p>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: '0 0 8px' }}>
-            {Number(combinedProgress.supervisedHours).toFixed(1)} Supervised hrs + {Number(combinedProgress.concentratedHours).toFixed(1)} Concentrated hrs × 1.3 = <strong style={{ color: 'var(--ink)' }}>{Number(combinedProgress.combinedTotal).toFixed(1)}</strong> hrs toward your 1,300-hr target
+            {Number(combinedProgress.supervisedHours).toFixed(1)} Supervised hrs + {Number(combinedProgress.concentratedHours).toFixed(1)} Concentrated hrs × 1.3 = <strong style={{ color: 'var(--ink)' }}>{Number(combinedProgress.combinedTotal).toFixed(1)}</strong> hrs toward your {track === 'concentrated' ? '1,000' : '1,300'}-hr target
           </p>
           <div style={{ height: 6, borderRadius: 3, background: 'var(--bg)', overflow: 'hidden' as const }}>
-            <div style={{ height: '100%', width: `${Math.min(100, (combinedProgress.combinedTotal / 1300) * 100)}%`, background: combinedProgress.meetsRequirement ? 'var(--spruce)' : 'var(--sky)' }} />
+            <div style={{ height: '100%', width: `${Math.min(100, (combinedProgress.combinedTotal / (track === 'concentrated' ? 1000 : 1300)) * 100)}%`, background: combinedProgress.meetsRequirement ? 'var(--spruce)' : 'var(--sky)' }} />
           </div>
         </div>
       )}

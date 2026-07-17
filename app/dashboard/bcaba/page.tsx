@@ -3,7 +3,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { useApi } from '../../context/api-context';
 
 const ENTRY_TYPES = ['supervised', 'independent', 'observation'];
-const FIELDWORK_TYPES = ['supervised', 'concentrated'];
 const SUP_FORMATS = ['individual', 'group'];
 const RESTRICTION_TYPES = ['unrestricted', 'restricted'];
 const SYNC_TYPES = ['asynchronous', 'synchronized'];
@@ -181,6 +180,7 @@ export default function BcabaPage() {
     setEntryType('supervised'); setSupFormat('individual'); setRestrictionType('unrestricted');
     setEntrySyncType('synchronized');
     setStartTime(''); setEndTime(''); setSupervisionModality('Face to Face'); setSupervisorName(''); setSetting('Center'); setObservationMinutes('');
+    setFieldworkType(track);
   }
 
   async function deleteEntry(id: number | string) {
@@ -431,12 +431,6 @@ export default function BcabaPage() {
             <label style={lbl}>Session Type</label>
             <select value={entryType} onChange={e => setEntryType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
               {ENTRY_TYPES.map(t => <option key={t} value={t}>{t === 'supervised' ? 'Supervised session' : t === 'independent' ? 'Independent (unsupervised)' : 'Observation'}</option>)}
-            </select>
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <label style={lbl}>Fieldwork Track</label>
-            <select value={fieldworkType} onChange={e => setFieldworkType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-              {FIELDWORK_TYPES.map(t => <option key={t} value={t}>{t === 'supervised' ? 'Supervised (1,300 hrs)' : 'Concentrated (1,000 hrs)'}</option>)}
             </select>
           </div>
           <div style={{ minWidth: 0 }}>

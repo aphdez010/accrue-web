@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../context/api-context';
 
-const TYPES = ['Unrestricted Hours','Restricted Hours','Experience — Other'];
+const TYPES = ['Unrestricted Hours','Restricted Hours'];
 const SETTINGS = ['Home','Center','School','Community','Telehealth','Other'];
 const SUP_FORMATS = ['In person','Virtual','With Client','N/A'];
 const SYNC_TYPES = ['Asynchronous','Synchronized'];
@@ -546,7 +546,7 @@ export default function FieldworkPage() {
                     {s.supervisor_user_id ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
                         <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: 'rgba(26,122,80,0.1)', color: 'var(--spruce)' }}>
-                          ✓ Linked to their own Supervisd account — they'll sign M-FVF/F-FVF themselves
+                          ✓ Linked to their own Supervisd account — they will sign M-FVF/F-FVF themselves
                         </span>
                         <button
                           onClick={async () => { await patch('/supervisors/' + s.id + '/unlink', {}); loadSupervisors(); }}

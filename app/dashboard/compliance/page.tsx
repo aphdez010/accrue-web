@@ -238,7 +238,7 @@ export default function CompliancePage() {
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '28px 32px', marginBottom: 24, minWidth: 0 }}>
             <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>BACB Requirements — {month}</p>
             {badge(d.supervisionMet, `Supervision ≥ ${(d.supervisionPct !== undefined ? '' : '')}${Math.round((d.totalHoursRequired === 1500 ? 10 : 5))}% of hours`, Number(d.supervisionPct || 0).toFixed(1) + ' %', monthIneligible)}
-            {badge(d.restrictedMet, 'Unrestricted activities ≥ 60% of total', Number(100 - (d.restrictedPct || 0)).toFixed(1) + ' %', monthIneligible)}
+            {badge(d.unrestrictedMet, 'Unrestricted activities ≥ 60% of total', (d.unrestrictedPct !== undefined ? Number(d.unrestrictedPct) : (100 - (d.restrictedPct || 0))).toFixed(1) + ' %', monthIneligible)}
             {badge(d.contactsMet, 'Supervision contacts this month', `${d.supervisionContacts} of ${d.contactsRequired || '—'} required`)}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

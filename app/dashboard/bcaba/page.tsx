@@ -7,6 +7,8 @@ const FIELDWORK_TYPES = ['supervised', 'concentrated'];
 const SUP_FORMATS = ['individual', 'group'];
 const RESTRICTION_TYPES = ['unrestricted', 'restricted'];
 const SYNC_TYPES = ['asynchronous', 'synchronized'];
+const SUP_MODALITIES = ['Face to Face', 'Video Call', 'With Client'];
+const SETTINGS = ['Home', 'Center', 'School', 'Community', 'Telehealth', 'Other'];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const inp = { width: '100%', maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const, WebkitAppearance: 'none' as const };
@@ -73,6 +75,12 @@ export default function BcabaPage() {
   const [supFormat, setSupFormat] = useState('individual');
   const [restrictionType, setRestrictionType] = useState('unrestricted');
   const [entrySyncType, setEntrySyncType] = useState('synchronized');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [supervisionModality, setSupervisionModality] = useState('Face to Face');
+  const [supervisorName, setSupervisorName] = useState('');
+  const [setting, setSetting] = useState('Center');
+  const [observationMinutes, setObservationMinutes] = useState('');
   const [activityDesc, setActivityDesc] = useState('');
   const [notes, setNotes] = useState('');
   const [editingId, setEditingId] = useState<string | number | null>(null);
@@ -109,6 +117,12 @@ export default function BcabaPage() {
         restrictionType,
         entrySyncType,
         fieldworkType,
+        startTime: startTime || null,
+        endTime: endTime || null,
+        supervisionModality: entryType !== 'independent' ? supervisionModality : null,
+        supervisorName: entryType !== 'independent' ? (supervisorName || null) : null,
+        setting: entryType === 'observation' ? setting : null,
+        observationMinutes: entryType === 'observation' && observationMinutes ? parseInt(observationMinutes) : null,
       };
       if (editingId) {
         await patch('/bcaba/fieldwork-entries/' + editingId, body);
@@ -131,6 +145,12 @@ export default function BcabaPage() {
     setSupFormat(e.supervision_format || 'individual');
     setRestrictionType(e.restriction_type || 'unrestricted');
     setEntrySyncType(e.entry_sync_type || 'synchronized');
+    setStartTime(e.start_time || '');
+    setEndTime(e.end_time || '');
+    setSupervisionModality(e.supervision_modality || 'Face to Face');
+    setSupervisorName(e.supervisor_name || '');
+    setSetting(e.setting || 'Center');
+    setObservationMinutes(e.observation_minutes != null ? String(e.observation_minutes) : '');
     setActivityDesc(e.activity_description || '');
     setNotes(e.notes || '');
     const form = document.getElementById('bcaba-log-form');
@@ -143,6 +163,7 @@ export default function BcabaPage() {
     setActivityDesc('');
     setEntryType('supervised'); setSupFormat('individual'); setRestrictionType('unrestricted');
     setEntrySyncType('synchronized');
+    setStartTime(''); setEndTime(''); setSupervisionModality('Face to Face'); setSupervisorName(''); setSetting('Center'); setObservationMinutes('');
   }
 
   async function deleteEntry(id: number | string) {
@@ -360,10 +381,18 @@ export default function BcabaPage() {
       <div id="bcaba-log-form" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px 16px' : '28px 32px', marginBottom: 24, minWidth: 0 }}>
         <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 20 }}>{editingId ? 'Edit Entry' : 'Log Entry'} — {date}</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 16 }}>
           <div style={{ minWidth: 0 }}>
             <label style={lbl}>Date</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <label style={lbl}>Start Time</label>
+            <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={inp} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <label style={lbl}>End Time</label>
+            <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={inp} />
           </div>
           <div style={{ minWidth: 0 }}>
             <label style={lbl}>Hours</label>
@@ -386,9 +415,19 @@ export default function BcabaPage() {
           </div>
           <div style={{ minWidth: 0 }}>
             <label style={lbl}>Supervision Format</label>
+            <select value={supervisionModality} onChange={e => setSupervisionModality(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+              {SUP_MODALITIES.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <label style={lbl}>Individual or Group</label>
             <select value={supFormat} onChange={e => setSupFormat(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
               {SUP_FORMATS.map(f => <option key={f} value={f}>{f === 'individual' ? 'Individual' : 'Group'}</option>)}
             </select>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <label style={lbl}>Supervisor Name</label>
+            <input placeholder="e.g. Dr. Smith" value={supervisorName} onChange={e => setSupervisorName(e.target.value)} style={inp} />
           </div>
           <div style={{ minWidth: 0 }}>
             <label style={lbl}>Entry Sync Type</label>
@@ -410,6 +449,21 @@ export default function BcabaPage() {
             </button>
           ))}
         </div>
+
+        {entryType === 'observation' && (
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div style={{ minWidth: 0 }}>
+              <label style={lbl}>Setting</label>
+              <select value={setting} onChange={e => setSetting(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                {SETTINGS.map(st => <option key={st}>{st}</option>)}
+              </select>
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <label style={lbl}>Observation Time</label>
+              <input type="number" min="0" placeholder="e.g. 30 min" value={observationMinutes} onChange={e => setObservationMinutes(e.target.value)} style={inp} />
+            </div>
+          </div>
+        )}
 
         <div style={{ marginBottom: 24 }}>
           <label style={lbl}>Notes (optional)</label>

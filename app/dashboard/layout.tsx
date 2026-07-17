@@ -214,7 +214,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
             {showToggle ? (
               <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2, overflowX: 'auto' as const, maxWidth: '50vw' }}>
-                {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
+                {(['bcba', 'trainee', 'bcaba'] as const).map(r => (
                   <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: effectiveRole === r ? 'var(--spruce)' : 'transparent', color: effectiveRole === r ? '#fff' : 'var(--muted)', font: '600 9.5px var(--sans)', lineHeight: 1.2, padding: '5px 7px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
                     {roleLabels[r]}
                   </button>
@@ -275,7 +275,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
           {showToggle ? (
             <div style={{ margin: '12px 12px 4px', background: 'var(--bg)', borderRadius: 10, padding: 4, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
-              {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
+              {(['bcba', 'trainee', 'bcaba'] as const).map(r => (
                 <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: effectiveRole === r ? 'var(--spruce)' : 'transparent', color: effectiveRole === r ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', textAlign: 'left' as const, padding: '9px 10px', borderRadius: 7, cursor: 'pointer' }}>
                   {roleLabels[r]}
                 </button>

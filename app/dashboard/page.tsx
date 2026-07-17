@@ -36,6 +36,7 @@ export default function SupervisorDashboardPage() {
         ((r?.trainees) || []).forEach((s: any) => { map[s.professional_id] = s; });
         setStatus(map);
       }).catch(() => {});
+
       const bcbaTrainees: Trainee[] = ((bcbaRes as any)?.trainees || []).map((t: any) => ({
         id: t.professional_id, full_name: t.full_name || 'Trainee', cred: 'BCBA',
         track: t.bcba_supervision_track, is_responsible: t.is_responsible,
@@ -75,36 +76,61 @@ export default function SupervisorDashboardPage() {
 
   const bcbaCount = roster.filter(t => t.cred === 'BCBA').length;
   const bcabaCount = roster.filter(t => t.cred === 'BCaBA').length;
-  const atRiskCount = Object.values(status).filter((s: any) => s?.atRisk).length;
+  const statusVals: any[] = Object.values(status);
+  const withData = statusVals.length;
+  const atRiskCount = statusVals.filter(s => s?.atRisk).length;
+  const onTrackCount = statusVals.filter(s => s?.monthState === 'on_track').length;
+  const avgCompletion = withData ? Math.round(statusVals.reduce((a, s) => a + (s.pctComplete || 0), 0) / withData) : 0;
+  const monthsUntil = (d: string) => (new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30.44);
+  const nearingDeadline = statusVals.filter(s => s?.fieldworkDeadline && monthsUntil(s.fieldworkDeadline) >= 0 && monthsUntil(s.fieldworkDeadline) <= 6).length;
 
-  const card = (label: string, value: string, color?: string) => (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '14px 16px' : '20px 24px', minWidth: 0 }}>
+  const card = (label: string, value: string, sub?: string, color?: string) => (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '14px 16px' : '18px 22px', minWidth: 0 }}>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 6 }}>{label}</p>
-      <p style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 22 : 28, fontWeight: 700, color: color || 'var(--ink)', margin: 0, lineHeight: 1 }}>{value}</p>
+      <p style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 22 : 26, fontWeight: 700, color: color || 'var(--ink)', margin: 0, lineHeight: 1 }}>{value}</p>
+      {sub && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', marginTop: 5 }}>{sub}</p>}
     </div>
   );
 
   const credBadge = (cred: 'BCBA' | 'BCaBA') => (
-    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: '.04em', padding: '2px 8px', borderRadius: 20, background: cred === 'BCBA' ? 'rgba(26,122,80,0.1)' : 'rgba(70,130,180,0.12)', color: cred === 'BCBA' ? 'var(--spruce)' : 'var(--sky, #3d6b8e)' }}>{cred}</span>
+    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: '.04em', padding: '2px 8px', borderRadius: 20, background: cred === 'BCBA' ? 'rgba(26,122,80,0.1)' : 'rgba(70,130,180,0.12)', color: cred === 'BCBA' ? 'var(--spruce)' : '#3d6b8e' }}>{cred}</span>
   );
 
+  const th: React.CSSProperties = { textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--muted)', padding: '0 14px 10px 0', whiteSpace: 'nowrap' };
+  const td: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', padding: '11px 14px 11px 0', whiteSpace: 'nowrap', borderTop: '1px solid var(--border)' };
+
+  const pct = (v: number, ok: boolean) => (
+    <span style={{ color: ok ? 'var(--spruce)' : 'var(--amber)' }}>{Number(v).toFixed(1)}%</span>
+  );
+  const monthChip = (state: string) => {
+    const map: Record<string, { bg: string; c: string; t: string }> = {
+      on_track: { bg: 'rgba(26,122,80,0.1)', c: 'var(--spruce)', t: 'On track' },
+      at_risk: { bg: 'rgba(255,160,0,0.12)', c: 'var(--amber)', t: 'At risk' },
+      not_started: { bg: 'rgba(0,0,0,0.05)', c: 'var(--muted)', t: 'Not started' },
+    };
+    const s = map[state] || map.not_started;
+    return <span style={{ fontFamily: 'var(--mono)', fontSize: 9, padding: '3px 9px', borderRadius: 20, background: s.bg, color: s.c }}>{s.t}</span>;
+  };
+  const fmtDeadline = (d: string | null) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—';
+
   return (
-    <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 900, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+    <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 1000, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
       <div style={{ marginBottom: 20 }}>
         <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>{monthLabel} · Supervision</p>
         <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-.02em' }}>Supervisor dashboard</h1>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
-        {card('BCBA Trainees', loading ? '—' : String(bcbaCount))}
-        {card('BCaBA Trainees', loading ? '—' : String(bcabaCount))}
-        {card('Pending Signatures', loading ? '—' : String(pending.length), pending.length > 0 ? 'var(--amber)' : undefined)}
-        {card('At Risk This Month', loading ? '—' : String(atRiskCount), atRiskCount > 0 ? 'var(--amber)' : undefined)}
+      {/* Program band */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
+        {card('Trainees', loading ? '—' : String(bcbaCount + bcabaCount), `${bcbaCount} BCBA · ${bcabaCount} BCaBA`)}
+        {card('Avg Completion', loading ? '—' : avgCompletion + '%', 'eligible hrs vs target')}
+        {card('On Track', loading ? '—' : `${onTrackCount}/${withData || 0}`, 'this month', atRiskCount > 0 ? 'var(--amber)' : undefined)}
+        {card('Nearing Deadline', loading ? '—' : String(nearingDeadline), 'within 6 months', nearingDeadline > 0 ? 'var(--amber)' : undefined)}
       </div>
 
       {/* Needs your signature */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px' : '24px 28px', marginBottom: 16, minWidth: 0 }}>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>Needs your signature</p>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px' : '22px 26px', marginBottom: 16, minWidth: 0 }}>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 14 }}>Needs your signature{pending.length ? ` (${pending.length})` : ''}</p>
         {loading ? (
           <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>Loading...</p>
         ) : pending.length === 0 ? (
@@ -125,38 +151,54 @@ export default function SupervisorDashboardPage() {
         )}
       </div>
 
-      {/* Your trainees */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '20px' : '24px 28px', minWidth: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' as const, gap: 8 }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>Your trainees</p>
-        </div>
+      {/* Trainee metrics table */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '18px' : '22px 26px', minWidth: 0 }}>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>Trainee metrics</p>
         {loading ? (
           <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>Loading...</p>
         ) : roster.length === 0 ? (
           <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>
-            No trainees yet. Add BCBA trainees under <a href="/dashboard/bcba/trainees" style={{ color: 'var(--spruce)' }}>My BCBA Trainees</a> or BCaBA trainees under <a href="/dashboard/bcaba/trainees" style={{ color: 'var(--spruce)' }}>My BCaBA Trainees</a>.
+            No trainees yet. Add them under <a href="/dashboard/bcba/trainees" style={{ color: 'var(--spruce)' }}>My BCBA Trainees</a> or <a href="/dashboard/bcaba/trainees" style={{ color: 'var(--spruce)' }}>My BCaBA Trainees</a>.
           </p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {roster.map((t, i) => {
-              const st = status[t.id];
-              return (
-              <a key={i} href={t.cred === 'BCBA' ? '/dashboard/bcba/trainees' : '/dashboard/bcaba/trainees'} title={st?.atRisk ? 'This month: ' + (st.reasons || []).join(', ') : undefined} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '11px 14px', borderRadius: 8, background: 'var(--bg)', border: `1px solid ${st?.atRisk ? 'var(--amber)' : 'var(--border)'}`, textDecoration: 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                  {credBadge(t.cred)}
-                  <span style={{ fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{t.full_name}</span>
-                  {t.is_responsible && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)' }}>Responsible</span>}
-                  {st?.atRisk && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,160,0,0.12)', color: 'var(--amber)' }}>At risk</span>}
-                </div>
-                {st && typeof st.totalHours === 'number' ? (
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>{Number(st.totalHours).toFixed(0)} / {st.totalHoursRequired} hrs</span>
-                ) : t.track ? (
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', textTransform: 'capitalize' as const }}>{t.track}</span>
-                ) : null}
-              </a>
-              );
-            })}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 640 }}>
+              <thead>
+                <tr>
+                  {['Trainee', 'Cred', 'Track', 'Hours', '% Done', 'Supervision', 'Restricted', 'This month', 'Deadline'].map(h => (
+                    <th key={h} style={th}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {roster.map((t, i) => {
+                  const s = status[t.id];
+                  const href = t.cred === 'BCBA' ? '/dashboard/bcba/trainees' : '/dashboard/bcaba/trainees';
+                  return (
+                    <tr key={i} style={{ background: s?.atRisk ? 'rgba(255,160,0,0.05)' : 'transparent' }}>
+                      <td style={{ ...td, whiteSpace: 'normal' }}>
+                        <a href={href} style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 600, fontFamily: 'var(--sans)', fontSize: 13 }}>{t.full_name}</a>
+                        {t.is_responsible && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', marginLeft: 6 }}>Resp.</span>}
+                      </td>
+                      <td style={td}>{credBadge(t.cred)}</td>
+                      <td style={{ ...td, textTransform: 'capitalize' }}>{s?.track || t.track || '—'}</td>
+                      <td style={td}>{s ? `${Number(s.totalEligibleHours).toFixed(0)} / ${s.totalHoursRequired}` : '—'}</td>
+                      <td style={td}>{s ? `${s.pctComplete}%` : '—'}</td>
+                      <td style={td}>{s ? pct(s.supervisionPct, s.supervisionMet) : '—'}</td>
+                      <td style={td}>{s ? pct(s.restrictedPct, s.restrictedMet) : '—'}</td>
+                      <td style={td}>{s ? monthChip(s.monthState) : <span style={{ color: 'var(--muted)' }}>—</span>}</td>
+                      <td style={td}>{s ? fmtDeadline(s.fieldworkDeadline) : '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
+        )}
+        {!loading && bcabaCount > 0 && (
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', marginTop: 14, lineHeight: 1.4 }}>
+            BCaBA compliance metrics run on a separate model and aren't populated here yet — BCaBA rows show name/track only.
+          </p>
         )}
       </div>
     </div>

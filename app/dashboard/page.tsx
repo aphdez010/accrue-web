@@ -77,6 +77,7 @@ export default function SupervisorDashboardPage() {
 
   const bcbaCount = roster.filter(t => t.cred === 'BCBA').length;
   const bcabaCount = roster.filter(t => t.cred === 'BCaBA').length;
+  const total = roster.length;
   const statusVals: any[] = Object.values(status);
   const withData = statusVals.length;
   const atRiskCount = statusVals.filter(s => s?.atRisk).length;
@@ -85,11 +86,21 @@ export default function SupervisorDashboardPage() {
   const monthsUntil = (d: string) => (new Date(d).getTime() - nowMs) / (1000 * 60 * 60 * 24 * 30.44);
   const nearingDeadline = statusVals.filter(s => s?.fieldworkDeadline && monthsUntil(s.fieldworkDeadline) >= 0 && monthsUntil(s.fieldworkDeadline) <= 6).length;
 
-  const card = (label: string, value: string, sub?: string, color?: string) => (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '14px 16px' : '18px 22px', minWidth: 0 }}>
-      <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 6 }}>{label}</p>
-      <p style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 22 : 26, fontWeight: 700, color: color || 'var(--ink)', margin: 0, lineHeight: 1 }}>{value}</p>
-      {sub && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', marginTop: 5 }}>{sub}</p>}
+  const bar = (pct: number, color = 'var(--spruce)', h = 6) => (
+    <div style={{ height: h, background: 'var(--bg)', borderRadius: h / 2, overflow: 'hidden', width: '100%' }}>
+      <div style={{ width: Math.max(2, Math.min(100, pct)) + '%', height: '100%', background: color, borderRadius: h / 2, transition: 'width .4s ease' }} />
+    </div>
+  );
+
+  // A card with an eyebrow glyph, a big number, and an optional visual footer.
+  const metricCard = (glyph: string, label: string, value: string, footer?: React.ReactNode, accent?: string) => (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px' : '18px 20px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>{label}</p>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: accent || 'var(--muted)', opacity: .8 }}>{glyph}</span>
+      </div>
+      <p style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 24 : 30, fontWeight: 700, color: accent || 'var(--ink)', margin: 0, lineHeight: 1 }}>{value}</p>
+      {footer && <div style={{ marginTop: 'auto' }}>{footer}</div>}
     </div>
   );
 
@@ -98,11 +109,8 @@ export default function SupervisorDashboardPage() {
   );
 
   const th: React.CSSProperties = { textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--muted)', padding: '0 14px 10px 0', whiteSpace: 'nowrap' };
-  const td: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', padding: '11px 14px 11px 0', whiteSpace: 'nowrap', borderTop: '1px solid var(--border)' };
-
-  const pct = (v: number, ok: boolean) => (
-    <span style={{ color: ok ? 'var(--spruce)' : 'var(--amber)' }}>{Number(v).toFixed(1)}%</span>
-  );
+  const td: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', padding: '12px 14px 12px 0', whiteSpace: 'nowrap', borderTop: '1px solid var(--border)', verticalAlign: 'middle' };
+  const pct = (v: number, ok: boolean) => <span style={{ color: ok ? 'var(--spruce)' : 'var(--amber)' }}>{Number(v).toFixed(1)}%</span>;
   const monthChip = (state: string) => {
     const map: Record<string, { bg: string; c: string; t: string }> = {
       on_track: { bg: 'rgba(26,122,80,0.1)', c: 'var(--spruce)', t: 'On track' },
@@ -114,6 +122,10 @@ export default function SupervisorDashboardPage() {
   };
   const fmtDeadline = (d: string | null) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—';
 
+  const addBtn = (label: string, href: string, primary?: boolean) => (
+    <a href={href} style={{ fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 600, padding: '10px 18px', borderRadius: 10, textDecoration: 'none', border: `1px solid ${primary ? 'var(--spruce)' : 'var(--border)'}`, background: primary ? 'var(--spruce)' : 'transparent', color: primary ? '#fff' : 'var(--ink)' }}>{label}</a>
+  );
+
   return (
     <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 1000, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
       <div style={{ marginBottom: 20 }}>
@@ -123,10 +135,16 @@ export default function SupervisorDashboardPage() {
 
       {/* Program band */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
-        {card('Trainees', loading ? '—' : String(bcbaCount + bcabaCount), `${bcbaCount} BCBA · ${bcabaCount} BCaBA`)}
-        {card('Avg Completion', loading ? '—' : avgCompletion + '%', 'eligible hrs vs target')}
-        {card('On Track', loading ? '—' : `${onTrackCount}/${withData || 0}`, 'this month', atRiskCount > 0 ? 'var(--amber)' : undefined)}
-        {card('Nearing Deadline', loading ? '—' : String(nearingDeadline), 'within 6 months', nearingDeadline > 0 ? 'var(--amber)' : undefined)}
+        {metricCard('◷', 'Trainees', loading ? '—' : String(total),
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', margin: 0 }}>{bcbaCount} BCBA · {bcabaCount} BCaBA</p>)}
+        {metricCard('↗', 'Avg Completion', loading ? '—' : avgCompletion + '%',
+          bar(avgCompletion))}
+        {metricCard('◉', 'On Track', loading ? '—' : `${onTrackCount}/${withData || 0}`,
+          bar(withData ? (onTrackCount / withData) * 100 : 0, atRiskCount > 0 ? 'var(--amber)' : 'var(--spruce)'),
+          atRiskCount > 0 ? 'var(--amber)' : undefined)}
+        {metricCard('⚑', 'Nearing Deadline', loading ? '—' : String(nearingDeadline),
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', margin: 0 }}>within 6 months</p>,
+          nearingDeadline > 0 ? 'var(--amber)' : undefined)}
       </div>
 
       {/* Needs your signature */}
@@ -152,21 +170,29 @@ export default function SupervisorDashboardPage() {
         )}
       </div>
 
-      {/* Trainee metrics table */}
+      {/* Trainee metrics */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '18px' : '22px 26px', minWidth: 0 }}>
         <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 16 }}>Trainee metrics</p>
         {loading ? (
           <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>Loading...</p>
         ) : roster.length === 0 ? (
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>
-            No trainees yet. Add them under <a href="/dashboard/bcba/trainees" style={{ color: 'var(--spruce)' }}>My BCBA Trainees</a> or <a href="/dashboard/bcaba/trainees" style={{ color: 'var(--spruce)' }}>My BCaBA Trainees</a>.
-          </p>
+          <div style={{ textAlign: 'center', padding: isMobile ? '32px 8px' : '48px 24px' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 28, color: 'var(--spruce)', opacity: .5, marginBottom: 12 }}>◷</div>
+            <h3 style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: '0 0 6px' }}>No trainees on your roster yet</h3>
+            <p style={{ fontFamily: 'var(--sans)', fontSize: 13, color: 'var(--muted)', margin: '0 auto 20px', maxWidth: 380, lineHeight: 1.5 }}>
+              Add a trainee to start tracking their fieldwork against the BACB rules — hours, supervision percentage, restricted ceiling, and their 5-year deadline, all in one place.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' as const }}>
+              {addBtn('Add a BCBA trainee', '/dashboard/bcba/trainees', true)}
+              {addBtn('Add a BCaBA trainee', '/dashboard/bcaba/trainees')}
+            </div>
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 640 }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 680 }}>
               <thead>
                 <tr>
-                  {['Trainee', 'Cred', 'Track', 'Hours', '% Done', 'Supervision', 'Restricted', 'This month', 'Deadline'].map(h => (
+                  {['Trainee', 'Cred', 'Track', 'Progress', '% Done', 'Supervision', 'Restricted', 'This month', 'Deadline'].map(h => (
                     <th key={h} style={th}>{h}</th>
                   ))}
                 </tr>
@@ -183,7 +209,14 @@ export default function SupervisorDashboardPage() {
                       </td>
                       <td style={td}>{credBadge(t.cred)}</td>
                       <td style={{ ...td, textTransform: 'capitalize' }}>{s?.track || t.track || '—'}</td>
-                      <td style={td}>{s ? `${Number(s.totalEligibleHours).toFixed(0)} / ${s.totalHoursRequired}` : '—'}</td>
+                      <td style={{ ...td, minWidth: 120 }}>
+                        {s ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {bar(s.pctComplete, s.atRisk ? 'var(--amber)' : 'var(--spruce)', 5)}
+                            <span style={{ fontSize: 10, color: 'var(--muted)' }}>{Number(s.totalEligibleHours).toFixed(0)} / {s.totalHoursRequired} hrs</span>
+                          </div>
+                        ) : '—'}
+                      </td>
                       <td style={td}>{s ? `${s.pctComplete}%` : '—'}</td>
                       <td style={td}>{s ? pct(s.supervisionPct, s.supervisionMet) : '—'}</td>
                       <td style={td}>{s ? pct(s.restrictedPct, s.restrictedMet) : '—'}</td>
@@ -194,12 +227,12 @@ export default function SupervisorDashboardPage() {
                 })}
               </tbody>
             </table>
+            {bcabaCount > 0 && (
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', marginTop: 14, lineHeight: 1.4 }}>
+                BCaBA compliance metrics run on a separate model and are not populated here yet — BCaBA rows show name/track only.
+              </p>
+            )}
           </div>
-        )}
-        {!loading && bcabaCount > 0 && (
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', marginTop: 14, lineHeight: 1.4 }}>
-            BCaBA compliance metrics run on a separate model and are not populated here yet — BCaBA rows show name/track only.
-          </p>
         )}
       </div>
     </div>

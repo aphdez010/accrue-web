@@ -85,6 +85,7 @@ export default function SupervisorDashboardPage() {
   const avgCompletion = withData ? Math.round(statusVals.reduce((a, s) => a + (s.pctComplete || 0), 0) / withData) : 0;
   const monthsUntil = (d: string) => (new Date(d).getTime() - nowMs) / (1000 * 60 * 60 * 24 * 30.44);
   const nearingDeadline = statusVals.filter(s => s?.fieldworkDeadline && monthsUntil(s.fieldworkDeadline) >= 0 && monthsUntil(s.fieldworkDeadline) <= 6).length;
+  const monthlyTrainees = roster.filter(t => ((status[t.id]?.months) || []).some((m: any) => m.rawHours > 0));
 
   const bar = (pct: number, color = 'var(--spruce)', h = 6) => (
     <div style={{ height: h, background: 'var(--bg)', borderRadius: h / 2, overflow: 'hidden', width: '100%' }}>
@@ -232,6 +233,55 @@ export default function SupervisorDashboardPage() {
                 BCaBA compliance metrics run on a separate model and are not populated here yet — BCaBA rows show name/track only.
               </p>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Monthly review — per-trainee monthly fieldwork, colored by whether the month counted */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '18px' : '22px 26px', marginTop: 16, minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 8, marginBottom: 18 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>Monthly review</p>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const }}>
+            {[['var(--spruce)', 'Counted'], ['var(--amber)', 'Adjusted'], ['var(--border)', 'Not counted']].map(([c, label]) => (
+              <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)' }}>
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: c, display: 'inline-block' }} />{label}
+              </span>
+            ))}
+          </div>
+        </div>
+        {loading ? (
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>Loading...</p>
+        ) : monthlyTrainees.length === 0 ? (
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>No monthly fieldwork logged yet — once a trainee logs hours, each month shows here.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {monthlyTrainees.map((t, i) => {
+              const st = status[t.id];
+              const months = ((st.months as any[]) || []).slice(-12);
+              const peak = Math.max(...months.map((m: any) => m.rawHours), 1);
+              return (
+                <div key={i}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' as const }}>
+                    {credBadge(t.cred)}
+                    <span style={{ fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{t.full_name}</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>{months.length} mo · {Number(st.totalEligibleHours).toFixed(0)} eligible hrs</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 60 }}>
+                    {months.map((m: any, j: number) => {
+                      const h = Math.max(3, Math.round((m.rawHours / peak) * 44));
+                      const color = (m.rawHours === 0 || m.eligibleHours === 0) ? 'var(--border)' : m.eligibleHours < m.rawHours ? 'var(--amber)' : 'var(--spruce)';
+                      const label = new Date(m.month + '-01').toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+                      return (
+                        <div key={j} title={`${label} ${m.month.slice(0, 4)} · ${m.rawHours} hrs logged, ${m.eligibleHours} eligible`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 6, flex: '1 1 0', minWidth: 20, height: '100%' }}>
+                        <div style={{ width: '100%', maxWidth: 28, height: h, background: color, borderRadius: 3, transition: 'height .3s ease' }} />
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--muted)' }}>{label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

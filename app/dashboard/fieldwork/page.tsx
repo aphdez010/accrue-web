@@ -307,7 +307,7 @@ export default function FieldworkPage() {
         supervised, notes: notes || null,
         activity_description: activityDesc || null,
         start_time: startTime || null, end_time: endTime || null,
-        setting, supervision_format: supervised ? supFormat : null,
+        setting: monthlyObs ? setting : null, supervision_format: supervised ? supFormat : null,
         monthly_observation: monthlyObs,
         observation_minutes: monthlyObs && observationMinutes ? parseInt(observationMinutes) : null,
         entry_sync_type: entrySyncType,
@@ -796,7 +796,7 @@ export default function FieldworkPage() {
           </div>
         )}
 
-        {/* Row 2: Type + Entry Sync Type + Setting */}
+        {/* Row 2: Type + Entry Sync Type */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
           <div style={{ minWidth: 0 }}>
             <label style={lbl}>Experience Type</label>
@@ -808,12 +808,6 @@ export default function FieldworkPage() {
             <label style={lbl}>Entry Type</label>
             <select value={entrySyncType} onChange={e => setEntrySyncType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
               {SYNC_TYPES.map(s => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <label style={lbl}>Setting</label>
-            <select value={setting} onChange={e => setSetting(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-              {SETTINGS.map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
         </div>
@@ -863,7 +857,7 @@ export default function FieldworkPage() {
         )}
 
         {/* Monthly observation + minutes */}
-        <div style={{ display: 'grid', gridTemplateColumns: monthlyObs ? '1fr 200px' : '1fr', gap: 16, marginBottom: 4, marginTop: supervised ? 0 : 20, alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: monthlyObs ? '1fr auto' : '1fr', gap: 16, marginBottom: 4, marginTop: supervised ? 0 : 20, alignItems: 'end' }}>
           <div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
               <div onClick={() => setMonthlyObs(s => !s)} style={{ width: 20, height: 20, borderRadius: 4, border: '2px solid ' + (monthlyObs ? 'var(--spruce)' : 'var(--border)'), background: monthlyObs ? 'var(--spruce)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
@@ -874,9 +868,17 @@ export default function FieldworkPage() {
             <p style={helpTxt}>This is the once-per-month required direct observation of you working with a client.</p>
           </div>
           {monthlyObs && (
-            <div style={{ minWidth: 0 }}>
-              <label style={lbl}>Observation Minutes</label>
-              <input type="number" min="0" placeholder="e.g. 30" value={observationMinutes} onChange={e => setObservationMinutes(e.target.value)} style={inp} />
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const }}>
+              <div style={{ minWidth: 0, width: 150 }}>
+                <label style={lbl}>Setting</label>
+                <select value={setting} onChange={e => setSetting(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                  {SETTINGS.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div style={{ minWidth: 0, width: 150 }}>
+                <label style={lbl}>Observation Minutes</label>
+                <input type="number" min="0" placeholder="e.g. 30" value={observationMinutes} onChange={e => setObservationMinutes(e.target.value)} style={inp} />
+              </div>
             </div>
           )}
         </div>

@@ -7,12 +7,6 @@ const FIELDWORK_TYPES = ['supervised', 'concentrated'];
 const SUP_FORMATS = ['individual', 'group'];
 const RESTRICTION_TYPES = ['unrestricted', 'restricted'];
 const SYNC_TYPES = ['asynchronous', 'synchronized'];
-const TASK_AREAS = [
-  'A. Measurement','B. Skill Acquisition','C. Behavior Reduction',
-  'D. Documentation & Reporting','E. Professional Conduct',
-  'F. Behavior Assessment','G. Behavior-Change Procedures',
-  'H. Selecting & Implementing Interventions','I. Personnel Supervision',
-];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const inp = { width: '100%', maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const, WebkitAppearance: 'none' as const };
@@ -80,8 +74,6 @@ export default function BcabaPage() {
   const [restrictionType, setRestrictionType] = useState('unrestricted');
   const [entrySyncType, setEntrySyncType] = useState('synchronized');
   const [activityDesc, setActivityDesc] = useState('');
-  const [taskArea, setTaskArea] = useState('');
-  const [taskAreaNum, setTaskAreaNum] = useState('');
   const [notes, setNotes] = useState('');
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [combinedProgress, setCombinedProgress] = useState<any>(null);
@@ -113,8 +105,6 @@ export default function BcabaPage() {
         activityCategory: 'direct_client_work',
         supervisionFormat: supFormat,
         activityDescription: activityDesc || null,
-        taskListArea: taskArea || null,
-        taskListAreaNumber: taskAreaNum ? parseInt(taskAreaNum, 10) : null,
         notes: notes || null,
         restrictionType,
         entrySyncType,
@@ -142,8 +132,6 @@ export default function BcabaPage() {
     setRestrictionType(e.restriction_type || 'unrestricted');
     setEntrySyncType(e.entry_sync_type || 'synchronized');
     setActivityDesc(e.activity_description || '');
-    setTaskArea(e.task_list_area || '');
-    setTaskAreaNum(e.task_list_area_number != null ? String(e.task_list_area_number) : '');
     setNotes(e.notes || '');
     const form = document.getElementById('bcaba-log-form');
     if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -152,7 +140,7 @@ export default function BcabaPage() {
   function cancelEdit() {
     setEditingId(null);
     setHours(''); setNotes('');
-    setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
+    setActivityDesc('');
     setEntryType('supervised'); setSupFormat('individual'); setRestrictionType('unrestricted');
     setEntrySyncType('synchronized');
   }
@@ -415,20 +403,6 @@ export default function BcabaPage() {
           <textarea value={activityDesc} onChange={e => setActivityDesc(e.target.value)} placeholder="Describe the activity (e.g. DTT with client, performance evaluation with feedback)" style={{ ...inp, minHeight: 72, resize: 'vertical' as const }} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '2fr 1fr', gap: 12, marginBottom: 16 }}>
-          <div style={{ minWidth: 0 }}>
-            <label style={lbl}>Task List Area</label>
-            <select value={taskArea} onChange={e => setTaskArea(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-              <option value="">Select area...</option>
-              {TASK_AREAS.map(a => <option key={a}>{a}</option>)}
-            </select>
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <label style={lbl}>Task List Item #</label>
-            <input type="number" min="1" placeholder="e.g. 4" value={taskAreaNum} onChange={e => setTaskAreaNum(e.target.value)} style={inp} />
-          </div>
-        </div>
-
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           {RESTRICTION_TYPES.map(r => (
             <button key={r} onClick={() => setRestrictionType(r)} style={{ flex: 1, border: '1px solid var(--border)', background: restrictionType === r ? 'var(--spruce)' : 'transparent', color: restrictionType === r ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', padding: '10px 12px', borderRadius: 8, cursor: 'pointer' }}>
@@ -464,7 +438,7 @@ export default function BcabaPage() {
           <div style={{ overflowX: 'auto' as const }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' as const, fontSize: isMobile ? 11 : 13 }}>
               <thead>
-                <tr>{['Date', 'Type', 'Track', 'Format', 'Hours', 'Restriction', 'Task Area', ''].map(h => (
+                <tr>{['Date', 'Type', 'Track', 'Format', 'Hours', 'Restriction', ''].map(h => (
                   <th key={h} style={{ textAlign: 'left' as const, fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
                 ))}</tr>
               </thead>
@@ -479,7 +453,6 @@ export default function BcabaPage() {
                     <td style={{ padding: '12px 16px 12px 0' }}>
                       <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontFamily: 'var(--mono)', background: e.restriction_type === 'unrestricted' ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: e.restriction_type === 'unrestricted' ? 'var(--spruce)' : 'var(--muted)' }}>{e.restriction_type || '-'}</span>
                     </td>
-                    <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.task_list_area ? `${e.task_list_area}${e.task_list_area_number ? ' #'+e.task_list_area_number : ''}` : '—'}</td>
                     <td style={{ padding: '12px 0', whiteSpace: 'nowrap' as const }}>
                       <button onClick={() => startEdit(e)} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', cursor: 'pointer', marginRight: 6 }}>
                         Edit

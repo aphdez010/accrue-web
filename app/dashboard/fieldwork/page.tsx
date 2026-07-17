@@ -2,14 +2,12 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../context/api-context';
-import { BCBA_TCO_6TH_ED, BCBA_TCO_DOMAIN_LABELS } from '../../lib/bcba-tco';
 
 const TYPES = ['Unrestricted Hours','Restricted Hours','Experience — Other'];
 const SETTINGS = ['Home','Center','School','Community','Telehealth','Other'];
 const SUP_FORMATS = ['In person','Virtual','With Client','N/A'];
 const SYNC_TYPES = ['Asynchronous','Synchronized'];
 const GROUP_TYPES = ['Individual','Group'];
-const TASK_AREAS = BCBA_TCO_DOMAIN_LABELS;
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const inp = { width: '100%', maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const, WebkitAppearance: 'none' as const };
@@ -105,8 +103,6 @@ export default function FieldworkPage() {
   const [supervisionGroupType, setSupervisionGroupType] = useState('Individual');
   const [setting, setSetting] = useState('Center');
   const [activityDesc, setActivityDesc] = useState('');
-  const [taskArea, setTaskArea] = useState('');
-  const [taskAreaNum, setTaskAreaNum] = useState('');
   const [monthlyObs, setMonthlyObs] = useState(false);
   const [observationMinutes, setObservationMinutes] = useState('');
   const [notes, setNotes] = useState('');
@@ -258,8 +254,6 @@ export default function FieldworkPage() {
     setSupervisionGroupType(e.supervision_group_type || 'Individual');
     setSetting(e.setting || 'Center');
     setActivityDesc(e.activity_description || '');
-    setTaskArea(e.task_list_area || '');
-    setTaskAreaNum(e.task_list_area_number != null ? String(e.task_list_area_number) : '');
     setMonthlyObs(!!e.monthly_observation);
     setObservationMinutes(e.observation_minutes != null ? String(e.observation_minutes) : '');
     setNotes(e.notes || '');
@@ -278,7 +272,7 @@ export default function FieldworkPage() {
     setSupervisorPresent(false);
     setSetting('Center');
     setHours(''); setStartTime(''); setEndTime(''); setNotes('');
-    setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
+    setActivityDesc('');
     setSupervised(false); setMonthlyObs(false);
     setObservationMinutes('');
     setSupervisorName('');
@@ -314,8 +308,6 @@ export default function FieldworkPage() {
         activity_description: activityDesc || null,
         start_time: startTime || null, end_time: endTime || null,
         setting, supervision_format: supervised ? supFormat : null,
-        task_list_area: taskArea || null,
-        task_list_area_number: taskAreaNum ? parseInt(taskAreaNum) : null,
         monthly_observation: monthlyObs,
         observation_minutes: monthlyObs && observationMinutes ? parseInt(observationMinutes) : null,
         entry_sync_type: entrySyncType,
@@ -330,11 +322,11 @@ export default function FieldworkPage() {
         // Remember this submission (not edits) as the source for "Duplicate
         // last entry" — most fields tend to repeat session-to-session for the
         // same trainee/supervisor/setting routine.
-        setLastEntry({ ...body, supervisor_name: supervisorName, supervision_format: supFormat, supervision_group_type: supervisionGroupType, entry_sync_type: entrySyncType, task_list_area: taskArea, task_list_area_number: taskAreaNum, fieldwork_type: entryFieldworkType, experience_type: type, setting });
+        setLastEntry({ ...body, supervisor_name: supervisorName, supervision_format: supFormat, supervision_group_type: supervisionGroupType, entry_sync_type: entrySyncType, fieldwork_type: entryFieldworkType, experience_type: type, setting });
       }
       setEditingId(null);
       setHours(''); setStartTime(''); setEndTime(''); setNotes('');
-      setActivityDesc(''); setTaskArea(''); setTaskAreaNum('');
+      setActivityDesc('');
       setSupervised(false); setMonthlyObs(false); setObservationMinutes('');
       setSupervisorName('');
       setOk(true); setTimeout(() => setOk(false), 3000);
@@ -355,8 +347,6 @@ export default function FieldworkPage() {
     setSupFormat(lastEntry.supervision_format || 'In person');
     setSupervisionGroupType(lastEntry.supervision_group_type || 'Individual');
     setSetting(lastEntry.setting || 'Center');
-    setTaskArea(lastEntry.task_list_area || '');
-    setTaskAreaNum(lastEntry.task_list_area_number != null ? String(lastEntry.task_list_area_number) : '');
     setEntryFieldworkType(lastEntry.fieldwork_type === 'concentrated' ? 'concentrated' : 'supervised');
     // Activity description, notes, and observation are entry-specific — left
     // blank rather than copied, so they don't get silently reused.
@@ -834,31 +824,6 @@ export default function FieldworkPage() {
           <textarea value={activityDesc} onChange={e => setActivityDesc(e.target.value)} placeholder="Describe the activity (e.g. DTT with client, performance evaluation with feedback)" style={{ ...inp, minHeight: 72, resize: 'vertical' }} />
         </div>
 
-        {/* Row 4: Task List Area — per BCBA Test Content Outline (6th ed.) */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 2fr', gap: 12, marginBottom: 16 }}>
-          <div style={{ minWidth: 0 }}>
-            <label style={lbl}>TCO Domain</label>
-            <select value={taskArea} onChange={e => { setTaskArea(e.target.value); setTaskAreaNum(''); }} style={{ ...inp, cursor: 'pointer' }}>
-              <option value="">Select domain...</option>
-              {TASK_AREAS.map(a => <option key={a}>{a}</option>)}
-            </select>
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <label style={lbl}>Task</label>
-            <select
-              value={taskAreaNum}
-              onChange={e => setTaskAreaNum(e.target.value)}
-              disabled={!taskArea}
-              style={{ ...inp, cursor: taskArea ? 'pointer' : 'not-allowed', opacity: taskArea ? 1 : 0.5 }}
-            >
-              <option value="">{taskArea ? 'Select task...' : 'Select a domain first'}</option>
-              {taskArea && BCBA_TCO_6TH_ED.find(d => `${d.code}. ${d.name}` === taskArea)?.tasks.map(t => (
-                <option key={t.num} value={t.num}>{t.num} — {t.text}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
         {/* Row 5: Supervised toggle + format + group type */}
         <div style={{ marginBottom: 4 }}>
           <div style={{ display: 'grid', gridTemplateColumns: supervised ? 'repeat(auto-fit, minmax(160px, 1fr))' : '1fr', gap: 16 }}>
@@ -947,7 +912,7 @@ export default function FieldworkPage() {
           <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? 11 : 13 }}>
             <thead>
-              <tr>{['Date','Description','Setting','Hours','Supervised','Format','Task Area','Obs',''].map(h => (
+              <tr>{['Date','Description','Setting','Hours','Supervised','Format','Obs',''].map(h => (
                 <th key={h} style={{ textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', paddingBottom: 12, borderBottom: '1px solid var(--border)', fontWeight: 500 }}>{h}</th>
               ))}</tr>
             </thead>
@@ -962,7 +927,6 @@ export default function FieldworkPage() {
                     <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontFamily: 'var(--mono)', background: e.supervised ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: e.supervised ? 'var(--spruce)' : 'var(--muted)' }}>{e.supervised ? 'Yes' : 'No'}</span>
                   </td>
                   <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.supervised ? (e.supervision_format || '—') : '—'}</td>
-                  <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{e.task_list_area ? `${e.task_list_area}${e.task_list_area_number ? ' #'+e.task_list_area_number : ''}` : '—'}</td>
                   <td style={{ padding: '12px 16px 12px 0', fontFamily: 'var(--mono)', fontSize: 11 }}>{e.monthly_observation ? <span style={{ color: 'var(--spruce)' }}>✓{e.observation_minutes ? ` ${e.observation_minutes}m` : ''}</span> : '—'}</td>
                   <td style={{ padding: '12px 0 12px 16px' }}>
                     <button onClick={() => startEdit(e)} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', cursor: 'pointer' }}>

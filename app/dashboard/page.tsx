@@ -11,6 +11,7 @@ export default function SupervisorDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [roster, setRoster] = useState<Trainee[]>([]);
   const [pending, setPending] = useState<Pending[]>([]);
+  const [status, setStatus] = useState<Record<number, any>>({});
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -30,6 +31,11 @@ export default function SupervisorDashboardPage() {
         get('/supervisors/my-trainees').catch(() => ({ trainees: [] })),
         get('/bcaba/supervisor/trainees').catch(() => []),
       ]);
+      get('/supervisors/trainee-status').then((r: any) => {
+        const map: Record<number, any> = {};
+        ((r?.trainees) || []).forEach((s: any) => { map[s.professional_id] = s; });
+        setStatus(map);
+      }).catch(() => {});
       const bcbaTrainees: Trainee[] = ((bcbaRes as any)?.trainees || []).map((t: any) => ({
         id: t.professional_id, full_name: t.full_name || 'Trainee', cred: 'BCBA',
         track: t.bcba_supervision_track, is_responsible: t.is_responsible,
@@ -69,11 +75,12 @@ export default function SupervisorDashboardPage() {
 
   const bcbaCount = roster.filter(t => t.cred === 'BCBA').length;
   const bcabaCount = roster.filter(t => t.cred === 'BCaBA').length;
+  const atRiskCount = Object.values(status).filter((s: any) => s?.atRisk).length;
 
-  const card = (label: string, value: string) => (
+  const card = (label: string, value: string, color?: string) => (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '14px 16px' : '20px 24px', minWidth: 0 }}>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 6 }}>{label}</p>
-      <p style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 22 : 28, fontWeight: 700, color: 'var(--ink)', margin: 0, lineHeight: 1 }}>{value}</p>
+      <p style={{ fontFamily: 'var(--display)', fontSize: isMobile ? 22 : 28, fontWeight: 700, color: color || 'var(--ink)', margin: 0, lineHeight: 1 }}>{value}</p>
     </div>
   );
 
@@ -88,10 +95,11 @@ export default function SupervisorDashboardPage() {
         <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-.02em' }}>Supervisor dashboard</h1>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
         {card('BCBA Trainees', loading ? '—' : String(bcbaCount))}
         {card('BCaBA Trainees', loading ? '—' : String(bcabaCount))}
-        {card('Pending Signatures', loading ? '—' : String(pending.length))}
+        {card('Pending Signatures', loading ? '—' : String(pending.length), pending.length > 0 ? 'var(--amber)' : undefined)}
+        {card('At Risk This Month', loading ? '—' : String(atRiskCount), atRiskCount > 0 ? 'var(--amber)' : undefined)}
       </div>
 
       {/* Needs your signature */}
@@ -130,16 +138,24 @@ export default function SupervisorDashboardPage() {
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {roster.map((t, i) => (
-              <a key={i} href={t.cred === 'BCBA' ? '/dashboard/bcba/trainees' : '/dashboard/bcaba/trainees'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '11px 14px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', textDecoration: 'none' }}>
+            {roster.map((t, i) => {
+              const st = status[t.id];
+              return (
+              <a key={i} href={t.cred === 'BCBA' ? '/dashboard/bcba/trainees' : '/dashboard/bcaba/trainees'} title={st?.atRisk ? 'This month: ' + (st.reasons || []).join(', ') : undefined} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '11px 14px', borderRadius: 8, background: 'var(--bg)', border: `1px solid ${st?.atRisk ? 'var(--amber)' : 'var(--border)'}`, textDecoration: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                   {credBadge(t.cred)}
                   <span style={{ fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{t.full_name}</span>
                   {t.is_responsible && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)' }}>Responsible</span>}
+                  {st?.atRisk && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,160,0,0.12)', color: 'var(--amber)' }}>At risk</span>}
                 </div>
-                {t.track && <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', textTransform: 'capitalize' as const }}>{t.track}</span>}
+                {st && typeof st.totalHours === 'number' ? (
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>{Number(st.totalHours).toFixed(0)} / {st.totalHoursRequired} hrs</span>
+                ) : t.track ? (
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', textTransform: 'capitalize' as const }}>{t.track}</span>
+                ) : null}
               </a>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
 import { useApi } from '../../context/api-context';
+import { ACTIVITY_LIBRARY } from '../../lib/activity-library';
 
 const ENTRY_TYPES = ['supervised', 'independent', 'observation'];
 const SUP_FORMATS = ['individual', 'group'];
@@ -8,52 +9,6 @@ const RESTRICTION_TYPES = ['unrestricted', 'restricted'];
 const SYNC_TYPES = ['asynchronous', 'synchronized'];
 const SUP_MODALITIES = ['Face to Face', 'Video Call', 'With Client'];
 const SETTINGS = ['Home', 'Center', 'School', 'Community', 'Telehealth', 'Other'];
-
-// Curated loggable fieldwork activities (paraphrased, not BACB's copyrighted TCO
-// text), grouped by the 6th-ed. Test Content Outline domains. Each carries a
-// SUGGESTED restricted/unrestricted tag: restricted = direct implementation of
-// services with a client; unrestricted = assessment, design, analysis,
-// supervision, and admin. Suggestions only — the trainee confirms.
-const ACTIVITY_LIBRARY: { label: string; type: 'restricted' | 'unrestricted' }[] = [
-  { label: 'Direct implementation of a skill-acquisition program with a client', type: 'restricted' },
-  { label: 'Direct implementation of a behavior intervention plan with a client', type: 'restricted' },
-  { label: 'Running discrete-trial teaching (DTT) directly with a client', type: 'restricted' },
-  { label: 'Running natural-environment teaching (NET) directly with a client', type: 'restricted' },
-  { label: 'Directly implementing differential reinforcement with a client', type: 'restricted' },
-  { label: 'Directly implementing prompting and prompt-fading with a client', type: 'restricted' },
-  { label: 'Directly implementing chaining procedures with a client', type: 'restricted' },
-  { label: 'Directly implementing a token economy with a client', type: 'restricted' },
-  { label: 'Directly implementing extinction, response cost, or time-out with a client', type: 'restricted' },
-  { label: 'Conducting a preference assessment directly with a client', type: 'restricted' },
-  { label: 'Collecting data during a direct client session', type: 'restricted' },
-  { label: 'Directly implementing discrimination training with a client', type: 'restricted' },
-  { label: 'Conducting a functional behavior assessment (FBA)', type: 'unrestricted' },
-  { label: 'Conducting a functional analysis', type: 'unrestricted' },
-  { label: 'Conducting a skills assessment (e.g., VB-MAPP, ABLLS-R)', type: 'unrestricted' },
-  { label: 'Designing or writing a skill-acquisition program', type: 'unrestricted' },
-  { label: 'Designing or writing a behavior intervention plan (BIP)', type: 'unrestricted' },
-  { label: 'Graphing client data', type: 'unrestricted' },
-  { label: 'Interpreting graphed data and making data-based decisions', type: 'unrestricted' },
-  { label: 'Selecting or designing a measurement / data-collection system', type: 'unrestricted' },
-  { label: 'Creating operational definitions of behavior', type: 'unrestricted' },
-  { label: 'Writing treatment or progress reports', type: 'unrestricted' },
-  { label: 'Treatment planning and goal selection', type: 'unrestricted' },
-  { label: 'Conducting a procedural-integrity / fidelity check', type: 'unrestricted' },
-  { label: 'Training or supervising RBTs / behavior technicians', type: 'unrestricted' },
-  { label: 'Delivering caregiver or parent training', type: 'unrestricted' },
-  { label: 'Observing a session and providing performance feedback', type: 'unrestricted' },
-  { label: 'Team meeting or case consultation', type: 'unrestricted' },
-  { label: 'Reviewing records at the outset of a case', type: 'unrestricted' },
-  { label: 'Selecting or recommending interventions based on assessment', type: 'unrestricted' },
-  { label: 'Applying a single-case experimental design', type: 'unrestricted' },
-  { label: 'Reviewing literature / professional development', type: 'unrestricted' },
-  { label: 'Addressing an ethical consideration or case', type: 'unrestricted' },
-  { label: 'Planning culturally responsive services', type: 'unrestricted' },
-  { label: 'Modeling a procedure for staff (behavioral skills training)', type: 'unrestricted' },
-  { label: 'Performance management of a supervisee', type: 'unrestricted' },
-  { label: 'Designing or evaluating a preference assessment', type: 'unrestricted' },
-  { label: 'Designing or evaluating a descriptive assessment', type: 'unrestricted' },
-];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const inp = { width: '100%', maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const, WebkitAppearance: 'none' as const };

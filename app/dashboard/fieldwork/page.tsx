@@ -2,6 +2,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useApi } from '../../context/api-context';
+import { ACTIVITY_LIBRARY } from '../../lib/activity-library';
 
 const TYPES = ['Unrestricted Hours','Restricted Hours'];
 const SETTINGS = ['Home','Center','School','Community','Telehealth','Other'];
@@ -96,6 +97,7 @@ export default function FieldworkPage() {
   const [endTime, setEndTime] = useState('');
   const [hours, setHours] = useState('');
   const [type, setType] = useState('Unrestricted Hours');
+  const [suggestedType, setSuggestedType] = useState<string | null>(null);
   const [entrySyncType, setEntrySyncType] = useState('Synchronized');
   const [supervised, setSupervised] = useState(false);
   const [supervisorName, setSupervisorName] = useState('');
@@ -280,10 +282,15 @@ export default function FieldworkPage() {
     if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  function pickActivity(val: string) {
+    const match = ACTIVITY_LIBRARY.find(a => a.label === val);
+    if (match) { setActivityDesc(val); setType(match.type === 'restricted' ? 'Restricted Hours' : 'Unrestricted Hours'); setSuggestedType(match.type); }
+  }
+
   function cancelEdit() {
     setEditingId(null);
     setDate(new Date().toISOString().slice(0, 10));
-    setType('Unrestricted Hours');
+    setType('Unrestricted Hours'); setSuggestedType(null);
     setEntrySyncType('Synchronized');
     setSupFormat('Face to Face');
     setSupervisionGroupType('Individual');
@@ -841,7 +848,7 @@ export default function FieldworkPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
           <div style={{ minWidth: 0 }}>
             <label style={lbl}>Experience Type</label>
-            <select value={type} onChange={e => setType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+            <select value={type} onChange={e => { setType(e.target.value); setSuggestedType(null); }} style={{ ...inp, cursor: 'pointer' }}>
               {TYPES.map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
@@ -851,6 +858,21 @@ export default function FieldworkPage() {
               {SYNC_TYPES.map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
+        </div>
+
+        {suggestedType && (
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', margin: '-6px 0 14px', lineHeight: 1.4 }}>
+            Suggested <strong style={{ color: 'var(--ink)' }}>{suggestedType}</strong> from the activity — a hint only; change Experience Type above if your clinical judgment differs.
+          </p>
+        )}
+
+        {/* Quick pick activity */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={lbl}>Quick pick activity — optional</label>
+          <input list="bcba-activity-list" placeholder="Type or choose a common activity to auto-suggest restricted/unrestricted..." onChange={e => pickActivity(e.target.value)} style={inp} />
+          <datalist id="bcba-activity-list">
+            {ACTIVITY_LIBRARY.map(a => <option key={a.label} value={a.label} />)}
+          </datalist>
         </div>
 
         {/* Row 3: Activity Description */}

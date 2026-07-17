@@ -11,7 +11,7 @@ type Role = 'trainee' | 'bcaba' | 'bcba';
 
 function getRoleFromPath(pathname: string, roleParam: string | null): Role {
   if (roleParam === 'trainee' || roleParam === 'bcaba' || roleParam === 'bcba') return roleParam;
-  const bcbaSupervisorRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus', '/dashboard/bcaba/trainees', '/dashboard/bcaba/invoices'];
+  const bcbaSupervisorRoutes = ['/dashboard/roster', '/dashboard/forms', '/dashboard/records', '/dashboard/ceus', '/dashboard/bcba/trainees', '/dashboard/bcaba/trainees', '/dashboard/bcaba/invoices'];
   if (bcbaSupervisorRoutes.some(r => pathname.startsWith(r))) return 'bcba';
   if (pathname === '/dashboard') return 'bcba';
   if (pathname.startsWith('/dashboard/bcaba')) return 'bcaba';

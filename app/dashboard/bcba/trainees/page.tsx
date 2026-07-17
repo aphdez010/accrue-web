@@ -9,7 +9,7 @@ const statusColors: Record<string, { bg: string; color: string }> = {
 };
 
 export default function BcbaSupervisorTraineesPage() {
-  const { get, patch } = useApi();
+  const { get, post, patch } = useApi();
   const [trainees, setTrainees] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loadingTrainees, setLoadingTrainees] = useState(true);
@@ -21,14 +21,43 @@ export default function BcbaSupervisorTraineesPage() {
   const [signing, setSigning] = useState<{ kind: 'mfvf' | 'ffvf'; id: number } | null>(null);
   const sigRef = useRef<any>(null);
 
-  useEffect(() => {
+  // Supervisor-initiated add-trainee-by-email
+  const [showAddTrainee, setShowAddTrainee] = useState(false);
+  const [newTraineeEmail, setNewTraineeEmail] = useState('');
+  const [addingTrainee, setAddingTrainee] = useState(false);
+  const [addTraineeErr, setAddTraineeErr] = useState('');
+  const [addTraineeNote, setAddTraineeNote] = useState('');
+
+  const loadTrainees = (selectId?: number) => {
     setLoadingTrainees(true);
     get('/supervisors/my-trainees').then((r: any) => {
       const list = Array.isArray(r?.trainees) ? r.trainees : [];
       setTrainees(list);
-      if (list.length > 0) setSelectedId(list[0].professional_id);
+      if (selectId != null) setSelectedId(selectId);
+      else if (list.length > 0) setSelectedId((prev) => prev ?? list[0].professional_id);
     }).catch((e: any) => setErr(e.message || 'Failed to load trainees')).finally(() => setLoadingTrainees(false));
-  }, []);
+  };
+
+  useEffect(() => { loadTrainees(); }, []);
+
+  async function handleAddTrainee() {
+    if (!newTraineeEmail.trim()) return;
+    setAddingTrainee(true);
+    setAddTraineeErr('');
+    setAddTraineeNote('');
+    try {
+      const result: any = await post('/supervisors/my-trainees', { traineeEmail: newTraineeEmail.trim() });
+      const proId = result?.trainee?.professional_id;
+      if (result?.alreadyLinked) setAddTraineeNote('That trainee is already linked to you.');
+      setNewTraineeEmail('');
+      setShowAddTrainee(false);
+      loadTrainees(proId);
+    } catch (e: any) {
+      setAddTraineeErr(e.message || 'Failed to add trainee');
+    } finally {
+      setAddingTrainee(false);
+    }
+  }
 
   const loadRecords = () => {
     if (!selectedId) return;
@@ -89,7 +118,48 @@ export default function BcbaSupervisorTraineesPage() {
   return (
     <div style={{ padding: 40, maxWidth: 900, width: '100%', boxSizing: 'border-box' }}>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>BCBA Supervision</p>
-      <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: '0 0 24px' }}>My BCBA Trainees</h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, margin: '0 0 24px', flexWrap: 'wrap' as const }}>
+        <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>My BCBA Trainees</h1>
+        <button
+          onClick={() => { setShowAddTrainee(v => !v); setAddTraineeErr(''); setAddTraineeNote(''); }}
+          style={{ border: 'none', background: 'var(--spruce)', color: '#fff', font: '600 12px var(--sans)', padding: '9px 16px', borderRadius: 8, cursor: 'pointer' }}
+        >
+          {showAddTrainee ? 'Cancel' : '+ Add BCBA Trainee'}
+        </button>
+      </div>
+
+      {showAddTrainee && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px 22px', marginBottom: 20 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', margin: '0 0 8px' }}>Trainee account email</p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+            <input
+              type="email"
+              value={newTraineeEmail}
+              onChange={e => setNewTraineeEmail(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleAddTrainee(); }}
+              placeholder="trainee@example.com"
+              style={{ flex: 1, minWidth: 240, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' as const }}
+            />
+            <button
+              onClick={handleAddTrainee}
+              disabled={addingTrainee || !newTraineeEmail.trim()}
+              style={{ border: 'none', background: 'var(--spruce)', color: '#fff', font: '600 12px var(--sans)', padding: '10px 18px', borderRadius: 8, cursor: addingTrainee ? 'default' : 'pointer', opacity: addingTrainee || !newTraineeEmail.trim() ? 0.6 : 1 }}
+            >
+              {addingTrainee ? 'Adding...' : 'Add'}
+            </button>
+          </div>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', margin: '8px 0 0', lineHeight: 1.4 }}>
+            The trainee must already have a Supervisd account. Adding them links you as a supervisor on their fieldwork; they still sign their own M-FVF/F-FVF.
+          </p>
+          {addTraineeErr && <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--amber)', margin: '8px 0 0' }}>{addTraineeErr}</p>}
+        </div>
+      )}
+
+      {addTraineeNote && (
+        <div style={{ background: 'rgba(26,122,80,0.08)', border: '1px solid var(--spruce)', borderRadius: 10, padding: '10px 16px', marginBottom: 20 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--spruce)', margin: 0 }}>{addTraineeNote}</p>
+        </div>
+      )}
 
       {err && (
         <div style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid var(--amber)', borderRadius: 10, padding: '12px 16px', marginBottom: 20 }}>
@@ -102,7 +172,7 @@ export default function BcbaSupervisorTraineesPage() {
       ) : trainees.length === 0 ? (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px' }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>
-            No BCBA trainees have linked your account as their supervisor yet. A trainee links you from their Fieldwork page's Supervisors panel using your account email.
+            No BCBA trainees yet. Use "+ Add BCBA Trainee" above to link a trainee by their account email, or wait for a trainee to link you from their Fieldwork page's Supervisors panel.
           </p>
         </div>
       ) : (

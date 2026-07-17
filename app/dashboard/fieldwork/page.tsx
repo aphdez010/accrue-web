@@ -918,7 +918,7 @@ export default function FieldworkPage() {
               </div>
               <div style={{ minWidth: 0, width: 150 }}>
                 <label style={lbl}>Observation Time</label>
-                <input type="number" min="0" placeholder="e.g. 30" value={observationMinutes} onChange={e => setObservationMinutes(e.target.value)} style={inp} />
+                <input type="number" min="0" placeholder="e.g. 30 min" value={observationMinutes} onChange={e => setObservationMinutes(e.target.value)} style={inp} />
               </div>
             </div>
           )}

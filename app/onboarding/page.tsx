@@ -7,7 +7,7 @@ export default function OnboardingPage() {
   const { user } = useUser();
   const { getToken } = useAuth();
   const router = useRouter();
-  const [role, setRole] = useState<'rbt' | 'bcba'>('rbt');
+  const [accountType, setAccountType] = useState<'bcba_trainee' | 'bcaba_trainee' | 'supervisor'>('bcba_trainee');
   const [credential, setCredential] = useState('');
   const [pid, setPid] = useState('');
   const [agency, setAgency] = useState('');
@@ -27,7 +27,9 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           full_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.emailAddresses[0]?.emailAddress,
           email: user.emailAddresses[0]?.emailAddress,
-          role,
+          account_type: accountType,
+          // legacy `role` kept populated for backward compat with older code paths
+          role: accountType === 'bcaba_trainee' ? 'bcaba' : 'bcba',
           credential_number: credential || null,
           bacb_pid: pid || null,
           agency_name: agency || null,
@@ -52,16 +54,23 @@ export default function OnboardingPage() {
 
         <div style={{ marginBottom: 24 }}>
           <p style={label}>I am a</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {(['rbt', 'bcba'] as const).map(r => (
-              <button key={r} onClick={() => setRole(r)} style={{ padding: '16px', borderRadius: 10, border: `2px solid ${role === r ? '#1A7A50' : '#e2e8e4'}`, background: role === r ? 'rgba(26,122,80,0.06)' : '#fff', cursor: 'pointer', textAlign: 'left' }}>
-                <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 16, fontWeight: 700, color: role === r ? '#1A7A50' : '#0F2018' }}>{r.toUpperCase()}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+            {([
+              { key: 'bcba_trainee', title: 'BCBA Trainee', sub: 'Accruing supervised fieldwork toward BCBA certification' },
+              { key: 'bcaba_trainee', title: 'BCaBA Trainee', sub: 'Accruing supervised fieldwork toward BCaBA certification' },
+              { key: 'supervisor', title: 'Supervisor', sub: 'A BCBA supervising BCBA and/or BCaBA trainees' },
+            ] as const).map(opt => (
+              <button key={opt.key} onClick={() => setAccountType(opt.key)} style={{ padding: '16px', borderRadius: 10, border: `2px solid ${accountType === opt.key ? '#1A7A50' : '#e2e8e4'}`, background: accountType === opt.key ? 'rgba(26,122,80,0.06)' : '#fff', cursor: 'pointer', textAlign: 'left' }}>
+                <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 16, fontWeight: 700, color: accountType === opt.key ? '#1A7A50' : '#0F2018' }}>{opt.title}</div>
                 <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#6b7c74', marginTop: 2 }}>
-                  {r === 'rbt' ? 'Registered Behavior Technician' : 'Board Certified Behavior Analyst'}
+                  {opt.sub}
                 </div>
               </button>
             ))}
           </div>
+          <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#6b7c74', marginTop: 8, lineHeight: 1.4 }}>
+            You pursue one BACB certification at a time, so this is set once. If your credential path changes later, contact support to update it.
+          </p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
@@ -71,7 +80,7 @@ export default function OnboardingPage() {
           </div>
           <div>
             <label style={label}>Credential Number</label>
-            <input style={field} placeholder="e.g. RBT-123456" value={credential} onChange={e => setCredential(e.target.value)} />
+            <input style={field} placeholder="if already certified" value={credential} onChange={e => setCredential(e.target.value)} />
           </div>
         </div>
 

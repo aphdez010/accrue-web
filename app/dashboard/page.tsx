@@ -33,9 +33,6 @@ export default function SupervisorDashboardPage() {
         get('/supervisors/my-trainees').catch(() => ({ trainees: [] })),
         get('/bcaba/supervisor/trainees').catch(() => []),
       ]);
-      // Per-trainee compliance status for both credentials, merged under
-      // collision-safe composite keys (BCBA professional ids and BCaBA trainee
-      // ids live in separate id spaces and can overlap).
       Promise.all([
         get('/supervisors/trainee-status').catch(() => ({ trainees: [] })),
         get('/bcaba/supervisor/trainee-status').catch(() => ({ trainees: [] })),
@@ -91,11 +88,13 @@ export default function SupervisorDashboardPage() {
   const total = roster.length;
   const statusVals: any[] = Object.values(status);
   const withData = statusVals.length;
-  const atRiskCount = statusVals.filter(s => s?.atRisk).length;
-  const onTrackCount = statusVals.filter(s => s?.monthState === 'on_track').length;
+  const onTrackN = statusVals.filter(s => s?.monthState === 'on_track').length;
+  const atRiskN = statusVals.filter(s => s?.monthState === 'at_risk').length;
+  const notStartedN = statusVals.filter(s => s?.monthState === 'not_started').length;
   const avgCompletion = withData ? Math.round(statusVals.reduce((a, s) => a + (s.pctComplete || 0), 0) / withData) : 0;
   const monthsUntil = (d: string) => (new Date(d).getTime() - nowMs) / (1000 * 60 * 60 * 24 * 30.44);
   const nearingDeadline = statusVals.filter(s => s?.fieldworkDeadline && monthsUntil(s.fieldworkDeadline) >= 0 && monthsUntil(s.fieldworkDeadline) <= 6).length;
+  const sortedRoster = [...roster].sort((a, b) => ((statOf(b)?.pctComplete || 0) - (statOf(a)?.pctComplete || 0)));
 
   const selected = view === 'all' ? null : (roster.find(t => skey(t.cred, t.id) === view) || null);
   const selStatus = selected ? statOf(selected) : null;
@@ -105,6 +104,30 @@ export default function SupervisorDashboardPage() {
       <div style={{ width: Math.max(2, Math.min(100, pctVal)) + '%', height: '100%', background: color, borderRadius: h / 2, transition: 'width .4s ease' }} />
     </div>
   );
+
+  const statusColor = (s: any) => !s ? 'var(--border)' : s.monthState === 'at_risk' ? 'var(--amber)' : s.monthState === 'not_started' ? 'var(--border)' : 'var(--spruce)';
+
+  // SVG donut — segments drawn as dashed circle arcs, total in the center.
+  const donut = (segs: { value: number; color: string }[], centerTop: string, centerBot: string) => {
+    const totalV = segs.reduce((a, s) => a + s.value, 0) || 1;
+    const R = 42; const C = 2 * Math.PI * R; let off = 0;
+    return (
+      <div style={{ position: 'relative', width: 104, height: 104, flex: 'none' }}>
+        <svg width="104" height="104" viewBox="0 0 104 104" style={{ transform: 'rotate(-90deg)' }}>
+          <circle cx="52" cy="52" r={R} fill="none" stroke="var(--bg)" strokeWidth="12" />
+          {segs.filter(s => s.value > 0).map((s, i) => {
+            const len = (s.value / totalV) * C;
+            const seg = <circle key={i} cx="52" cy="52" r={R} fill="none" stroke={s.color} strokeWidth="12" strokeDasharray={len + ' ' + (C - len)} strokeDashoffset={-off} />;
+            off += len; return seg;
+          })}
+        </svg>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: 'var(--display)', fontSize: 26, fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{centerTop}</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)' }}>{centerBot}</span>
+        </div>
+      </div>
+    );
+  };
 
   const metricCard = (glyph: string, label: string, value: string, footer?: React.ReactNode, accent?: string) => (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: isMobile ? '16px' : '18px 20px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -121,8 +144,6 @@ export default function SupervisorDashboardPage() {
     <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: '.04em', padding: '2px 8px', borderRadius: 20, background: cred === 'BCBA' ? 'rgba(26,122,80,0.1)' : 'rgba(70,130,180,0.12)', color: cred === 'BCBA' ? 'var(--spruce)' : '#3d6b8e' }}>{cred}</span>
   );
 
-  const th: React.CSSProperties = { textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--muted)', padding: '0 14px 10px 0', whiteSpace: 'nowrap' };
-  const td: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)', padding: '12px 14px 12px 0', whiteSpace: 'nowrap', borderTop: '1px solid var(--border)', verticalAlign: 'middle' };
   const pct = (v: number, ok: boolean) => <span style={{ color: ok ? 'var(--spruce)' : 'var(--amber)' }}>{Number(v).toFixed(1)}%</span>;
   const monthChip = (state: string) => {
     const map: Record<string, { bg: string; c: string; t: string }> = {
@@ -147,7 +168,6 @@ export default function SupervisorDashboardPage() {
     <a href={href} style={{ fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 600, padding: '10px 18px', borderRadius: 10, textDecoration: 'none', border: '1px solid ' + (primary ? 'var(--spruce)' : 'var(--border)'), background: primary ? 'var(--spruce)' : 'transparent', color: primary ? '#fff' : 'var(--ink)' }}>{label}</a>
   );
 
-  // Monthly bar chart for a set of trainees — reused by the cohort view and the per-trainee view.
   const monthlyChart = (list: Trainee[]) => {
     const withM = list.filter(t => ((statOf(t)?.months) || []).some((m: any) => m.rawHours > 0));
     if (withM.length === 0) return <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>No monthly fieldwork logged yet — once hours are logged, each month shows here.</p>;
@@ -166,12 +186,12 @@ export default function SupervisorDashboardPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 60 }}>
                 {months.map((m: any, j: number) => {
-                  const h = Math.max(3, Math.round((m.rawHours / peak) * 44));
+                  const hgt = Math.max(3, Math.round((m.rawHours / peak) * 44));
                   const color = (m.rawHours === 0 || m.eligibleHours === 0) ? 'var(--border)' : m.eligibleHours < m.rawHours ? 'var(--amber)' : 'var(--spruce)';
                   const label = new Date(m.month + '-01').toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
                   return (
                     <div key={j} title={label + ' ' + m.month.slice(0, 4) + ' · ' + m.rawHours + ' hrs logged, ' + m.eligibleHours + ' eligible'} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 6, flex: '1 1 0', minWidth: 20, height: '100%' }}>
-                      <div style={{ width: '100%', maxWidth: 28, height: h, background: color, borderRadius: 3, transition: 'height .3s ease' }} />
+                      <div style={{ width: '100%', maxWidth: 28, height: hgt, background: color, borderRadius: 3, transition: 'height .3s ease' }} />
                       <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--muted)' }}>{label}</span>
                     </div>
                   );
@@ -196,9 +216,22 @@ export default function SupervisorDashboardPage() {
     </div>
   );
 
+  const emptyState = (
+    <div style={{ textAlign: 'center', padding: isMobile ? '32px 8px' : '48px 24px' }}>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 28, color: 'var(--spruce)', opacity: .5, marginBottom: 12 }}>◷</div>
+      <h3 style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: '0 0 6px' }}>No trainees on your roster yet</h3>
+      <p style={{ fontFamily: 'var(--sans)', fontSize: 13, color: 'var(--muted)', margin: '0 auto 20px', maxWidth: 380, lineHeight: 1.5 }}>
+        Add a trainee to start tracking their fieldwork against the BACB rules — hours, supervision percentage, restricted ceiling, and their 5-year deadline, all in one place.
+      </p>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' as const }}>
+        {addBtn('Add a BCBA trainee', '/dashboard/bcba/trainees', true)}
+        {addBtn('Add a BCaBA trainee', '/dashboard/bcaba/trainees')}
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ padding: isMobile ? '20px 16px' : 40, maxWidth: 1000, width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
-      {/* Header + view switcher */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' as const, marginBottom: 20 }}>
         <div>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>{monthLabel} · Supervision</p>
@@ -214,17 +247,72 @@ export default function SupervisorDashboardPage() {
 
       {view === 'all' ? (
         <>
-          {/* Program band */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
-            {metricCard('◷', 'Trainees', loading ? '—' : String(total),
-              <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', margin: 0 }}>{bcbaCount} BCBA · {bcabaCount} BCaBA</p>)}
-            {metricCard('↗', 'Avg Completion', loading ? '—' : avgCompletion + '%', bar(avgCompletion))}
-            {metricCard('◉', 'On Track', loading ? '—' : onTrackCount + '/' + (withData || 0),
-              bar(withData ? (onTrackCount / withData) * 100 : 0, atRiskCount > 0 ? 'var(--amber)' : 'var(--spruce)'),
-              atRiskCount > 0 ? 'var(--amber)' : undefined)}
-            {metricCard('⚑', 'Nearing Deadline', loading ? '—' : String(nearingDeadline),
-              <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', margin: 0 }}>within 6 months</p>,
-              nearingDeadline > 0 ? 'var(--amber)' : undefined)}
+          {/* Cohort snapshot */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1.1fr) minmax(0,1fr)', gap: 12, marginBottom: 16 }}>
+            <div style={card}>
+              <p style={{ ...sectionLabel, marginBottom: 14 }}>Cohort this month</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' as const }}>
+                {donut([
+                  { value: onTrackN, color: 'var(--spruce)' },
+                  { value: atRiskN, color: 'var(--amber)' },
+                  { value: notStartedN, color: 'var(--border)' },
+                ], loading ? '—' : String(withData || total), 'trainees')}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                  {[['var(--spruce)', 'On track', onTrackN], ['var(--amber)', 'At risk', atRiskN], ['var(--border)', 'Not started', notStartedN]].map((row: any) => (
+                    <span key={row[1]} style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 2, background: row[0], display: 'inline-block' }} />{row[1]} <b style={{ color: 'var(--ink)', fontWeight: 700 }}>{loading ? '—' : row[2]}</b>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 12 }}>
+              <div style={{ ...card, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <p style={{ ...sectionLabel, marginBottom: 10 }}>Avg completion</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontFamily: 'var(--display)', fontSize: 26, fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{loading ? '—' : avgCompletion + '%'}</span>
+                  <div style={{ flex: 1 }}>{bar(avgCompletion)}</div>
+                </div>
+              </div>
+              <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <p style={{ ...sectionLabel, marginBottom: 8 }}>Nearing deadline</p>
+                  <span style={{ fontFamily: 'var(--display)', fontSize: 26, fontWeight: 700, color: nearingDeadline > 0 ? 'var(--amber)' : 'var(--ink)', lineHeight: 1 }}>{loading ? '—' : String(nearingDeadline)}</span>
+                </div>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: nearingDeadline > 0 ? 'var(--amber)' : 'var(--muted)', opacity: .8 }}>⚑</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Cohort progress board */}
+          <div style={{ ...card, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap' as const, gap: 8 }}>
+              <p style={sectionLabel}>Cohort progress</p>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>toward hour goal · tap a row for detail</span>
+            </div>
+            {loading ? (
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>Loading...</p>
+            ) : roster.length === 0 ? emptyState : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+                {sortedRoster.map((t, i) => {
+                  const s = statOf(t);
+                  const pctV = s?.pctComplete || 0;
+                  return (
+                    <div key={i} onClick={() => setView(skey(t.cred, t.id))} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                      <div style={{ width: isMobile ? 118 : 156, flex: 'none', display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                        {credBadge(t.cred)}
+                        <span style={{ fontFamily: 'var(--sans)', fontSize: 13, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.full_name}</span>
+                      </div>
+                      <div style={{ flex: 1, height: 14, background: 'var(--bg)', borderRadius: 7, overflow: 'hidden' }}>
+                        <div style={{ width: Math.max(2, Math.min(100, pctV)) + '%', height: '100%', background: statusColor(s), borderRadius: 7, transition: 'width .5s ease' }} />
+                      </div>
+                      <span style={{ width: 38, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{pctV}%</span>
+                      {!isMobile && <span style={{ width: 116, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{s ? Number(s.totalEligibleHours).toFixed(0) + ' / ' + s.totalHoursRequired + ' hrs' : '—'}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Needs your signature */}
@@ -250,68 +338,8 @@ export default function SupervisorDashboardPage() {
             )}
           </div>
 
-          {/* Trainee metrics */}
-          <div style={card}>
-            <p style={{ ...sectionLabel, marginBottom: 16 }}>Trainee metrics</p>
-            {loading ? (
-              <p style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--muted)', margin: 0 }}>Loading...</p>
-            ) : roster.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: isMobile ? '32px 8px' : '48px 24px' }}>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 28, color: 'var(--spruce)', opacity: .5, marginBottom: 12 }}>◷</div>
-                <h3 style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: '0 0 6px' }}>No trainees on your roster yet</h3>
-                <p style={{ fontFamily: 'var(--sans)', fontSize: 13, color: 'var(--muted)', margin: '0 auto 20px', maxWidth: 380, lineHeight: 1.5 }}>
-                  Add a trainee to start tracking their fieldwork against the BACB rules — hours, supervision percentage, restricted ceiling, and their 5-year deadline, all in one place.
-                </p>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' as const }}>
-                  {addBtn('Add a BCBA trainee', '/dashboard/bcba/trainees', true)}
-                  {addBtn('Add a BCaBA trainee', '/dashboard/bcaba/trainees')}
-                </div>
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 680 }}>
-                  <thead>
-                    <tr>
-                      {['Trainee', 'Cred', 'Track', 'Progress', '% Done', 'Supervision', 'Restricted', 'This month', 'Deadline'].map(h => (
-                        <th key={h} style={th}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {roster.map((t, i) => {
-                      const s = statOf(t);
-                      return (
-                        <tr key={i} style={{ background: s?.atRisk ? 'rgba(255,160,0,0.05)' : 'transparent', cursor: 'pointer' }} onClick={() => setView(skey(t.cred, t.id))}>
-                          <td style={{ ...td, whiteSpace: 'normal' }}>
-                            <span style={{ color: 'var(--ink)', fontWeight: 600, fontFamily: 'var(--sans)', fontSize: 13 }}>{t.full_name}</span>
-                            {t.is_responsible && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', marginLeft: 6 }}>Resp.</span>}
-                          </td>
-                          <td style={td}>{credBadge(t.cred)}</td>
-                          <td style={{ ...td, textTransform: 'capitalize' }}>{s?.track || t.track || '—'}</td>
-                          <td style={{ ...td, minWidth: 120 }}>
-                            {s ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                {bar(s.pctComplete, s.atRisk ? 'var(--amber)' : 'var(--spruce)', 5)}
-                                <span style={{ fontSize: 10, color: 'var(--muted)' }}>{Number(s.totalEligibleHours).toFixed(0)} / {s.totalHoursRequired} hrs</span>
-                              </div>
-                            ) : '—'}
-                          </td>
-                          <td style={td}>{s ? s.pctComplete + '%' : '—'}</td>
-                          <td style={td}>{s ? pct(s.supervisionPct, s.supervisionMet) : '—'}</td>
-                          <td style={td}>{s ? pct(s.restrictedPct, s.restrictedMet) : '—'}</td>
-                          <td style={td}>{s ? monthChip(s.monthState) : <span style={{ color: 'var(--muted)' }}>—</span>}</td>
-                          <td style={td}>{s ? fmtDeadline(s.fieldworkDeadline) : '—'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
           {/* Monthly review */}
-          <div style={{ ...card, marginTop: 16 }}>
+          <div style={card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 8, marginBottom: 18 }}>
               <p style={sectionLabel}>Monthly review</p>
               {legend}
@@ -321,7 +349,6 @@ export default function SupervisorDashboardPage() {
         </>
       ) : selected ? (
         <>
-          {/* Per-trainee header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const, marginBottom: 16 }}>
             {credBadge(selected.cred)}
             <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', textTransform: 'capitalize' }}>{selStatus?.track || selected.track || ''} track</span>
@@ -347,7 +374,6 @@ export default function SupervisorDashboardPage() {
                   selStatus.restrictedMet ? undefined : 'var(--amber)')}
               </div>
 
-              {/* This month + deadline strip */}
               <div style={{ ...card, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={sectionLabel}>This month</span>
@@ -368,7 +394,6 @@ export default function SupervisorDashboardPage() {
                 </div>
               )}
 
-              {/* Their monthly review */}
               <div style={{ ...card, marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 8, marginBottom: 18 }}>
                   <p style={sectionLabel}>Monthly review</p>
@@ -377,7 +402,6 @@ export default function SupervisorDashboardPage() {
                 {monthlyChart([selected])}
               </div>
 
-              {/* Their pending forms */}
               <div style={card}>
                 <p style={{ ...sectionLabel, marginBottom: 14 }}>Forms &amp; signatures</p>
                 {(() => {

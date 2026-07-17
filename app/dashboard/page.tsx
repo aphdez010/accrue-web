@@ -117,21 +117,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Task list coverage */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', margin: 0 }}>Task List Coverage</p>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--ink)' }}>{d?.taskListCoverageCount || 0} / {d?.taskListCoverage?.length || 9} areas</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
-          {(d?.taskListCoverage || Array(9).fill({ area: '...', covered: false })).map((t: any, i: number) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: t.covered ? 'rgba(26,122,80,0.08)' : 'var(--bg)', border: `1px solid ${t.covered ? 'rgba(26,122,80,0.2)' : 'var(--border)'}`, minWidth: 0 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.covered ? 'var(--spruce)' : 'var(--border)', flexShrink: 0 }} />
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: t.covered ? 'var(--spruce)' : 'var(--muted)' }}>{t.area}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

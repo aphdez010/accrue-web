@@ -12,6 +12,7 @@ export default function SupervisorDashboardPage() {
   const [roster, setRoster] = useState<Trainee[]>([]);
   const [pending, setPending] = useState<Pending[]>([]);
   const [status, setStatus] = useState<Record<number, any>>({});
+  const [nowMs] = useState(() => Date.now());
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -21,8 +22,6 @@ export default function SupervisorDashboardPage() {
   }, []);
 
   const monthLabel = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-
-  useEffect(() => { load(); }, []);
 
   async function load() {
     setLoading(true);
@@ -74,6 +73,8 @@ export default function SupervisorDashboardPage() {
     }
   }
 
+  useEffect(() => { load(); }, []);
+
   const bcbaCount = roster.filter(t => t.cred === 'BCBA').length;
   const bcabaCount = roster.filter(t => t.cred === 'BCaBA').length;
   const statusVals: any[] = Object.values(status);
@@ -81,7 +82,7 @@ export default function SupervisorDashboardPage() {
   const atRiskCount = statusVals.filter(s => s?.atRisk).length;
   const onTrackCount = statusVals.filter(s => s?.monthState === 'on_track').length;
   const avgCompletion = withData ? Math.round(statusVals.reduce((a, s) => a + (s.pctComplete || 0), 0) / withData) : 0;
-  const monthsUntil = (d: string) => (new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30.44);
+  const monthsUntil = (d: string) => (new Date(d).getTime() - nowMs) / (1000 * 60 * 60 * 24 * 30.44);
   const nearingDeadline = statusVals.filter(s => s?.fieldworkDeadline && monthsUntil(s.fieldworkDeadline) >= 0 && monthsUntil(s.fieldworkDeadline) <= 6).length;
 
   const card = (label: string, value: string, sub?: string, color?: string) => (
@@ -197,7 +198,7 @@ export default function SupervisorDashboardPage() {
         )}
         {!loading && bcabaCount > 0 && (
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', marginTop: 14, lineHeight: 1.4 }}>
-            BCaBA compliance metrics run on a separate model and aren't populated here yet — BCaBA rows show name/track only.
+            BCaBA compliance metrics run on a separate model and are not populated here yet — BCaBA rows show name/track only.
           </p>
         )}
       </div>

@@ -126,6 +126,8 @@ export default function FieldworkPage() {
   // Training date state, keyed by supervisor id
   const [trainingDateFor, setTrainingDateFor] = useState<Record<number, string>>({});
   const [savingTrainingFor, setSavingTrainingFor] = useState<number | null>(null);
+  const [credentialFor, setCredentialFor] = useState<Record<number, string>>({});
+  const [savingCredentialFor, setSavingCredentialFor] = useState<number | null>(null);
 
   // Qualification state (certification date + consulting supervisor), keyed by supervisor id
   const [certDateFor, setCertDateFor] = useState<Record<number, string>>({});
@@ -216,6 +218,22 @@ export default function FieldworkPage() {
       setSupervisorErr(e.message || 'Failed to save training date');
     } finally {
       setSavingTrainingFor(null);
+    }
+  }
+
+  async function handleSaveCredential(supervisorId: number) {
+    const credential = (credentialFor[supervisorId] || '').trim();
+    if (!credential) return;
+    setSavingCredentialFor(supervisorId);
+    setSupervisorErr('');
+    try {
+      await patch('/supervisors/' + supervisorId + '/credential', { credential });
+      setCredentialFor(prev => ({ ...prev, [supervisorId]: '' }));
+      loadSupervisors();
+    } catch (e: any) {
+      setSupervisorErr(e.message || 'Failed to save BACB Account ID');
+    } finally {
+      setSavingCredentialFor(null);
     }
   }
 
@@ -452,7 +470,7 @@ export default function FieldworkPage() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 10 }}>
                     <div>
                       <p style={{ fontFamily: 'var(--display)', fontSize: 14, fontWeight: 500, color: 'var(--ink)', margin: '0 0 2px' }}>{s.supervisor_name}</p>
-                      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)', margin: 0 }}>{s.supervisor_credential || 'No credential on file'}</p>
+                      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: s.supervisor_credential ? 'var(--muted)' : 'var(--amber)', margin: 0 }}>{s.supervisor_credential ? 'BACB ID: ' + s.supervisor_credential : '! No BACB Account ID on file'}</p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontFamily: 'var(--mono)', fontSize: 10, background: s.is_responsible ? 'rgba(26,122,80,0.1)' : 'rgba(0,0,0,0.05)', color: s.is_responsible ? 'var(--spruce)' : 'var(--muted)' }}>
@@ -535,6 +553,29 @@ export default function FieldworkPage() {
                         style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: savingTrainingFor === s.id || !trainingDateFor[s.id] ? 'not-allowed' : 'pointer' }}
                       >
                         {savingTrainingFor === s.id ? 'Saving...' : hasTraining ? 'Update date' : 'Save date'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Supervisor BACB Account ID / Certification # — prints in the
+                      "Certification # / BACB ID #" slot on the M-FVF and F-FVF, so
+                      without it those forms show a blank supervisor ID. */}
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid ' + (s.is_responsible ? 'rgba(26,122,80,0.15)' : 'var(--border)'), display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8 }}>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)' }}>Supervisor BACB Account ID / Cert. #</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input
+                        type="text"
+                        placeholder={s.supervisor_credential || 'e.g. 1-23-4567'}
+                        value={credentialFor[s.id] || ''}
+                        onChange={e => setCredentialFor(prev => ({ ...prev, [s.id]: e.target.value }))}
+                        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', width: 140 }}
+                      />
+                      <button
+                        onClick={() => handleSaveCredential(s.id)}
+                        disabled={savingCredentialFor === s.id || !(credentialFor[s.id] || '').trim()}
+                        style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink)', cursor: savingCredentialFor === s.id || !(credentialFor[s.id] || '').trim() ? 'not-allowed' : 'pointer' }}
+                      >
+                        {savingCredentialFor === s.id ? 'Saving...' : s.supervisor_credential ? 'Update' : 'Save'}
                       </button>
                     </div>
                   </div>

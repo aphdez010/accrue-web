@@ -5,7 +5,7 @@ import { useApi } from '../../context/api-context';
 
 const TYPES = ['Unrestricted Hours','Restricted Hours'];
 const SETTINGS = ['Home','Center','School','Community','Telehealth','Other'];
-const SUP_FORMATS = ['In person','Virtual','With Client','N/A'];
+const SUP_FORMATS = ['Face to Face','Video Call','With Client'];
 const SYNC_TYPES = ['Asynchronous','Synchronized'];
 const GROUP_TYPES = ['Individual','Group'];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -99,7 +99,7 @@ export default function FieldworkPage() {
   const [entrySyncType, setEntrySyncType] = useState('Synchronized');
   const [supervised, setSupervised] = useState(false);
   const [supervisorName, setSupervisorName] = useState('');
-  const [supFormat, setSupFormat] = useState('In person');
+  const [supFormat, setSupFormat] = useState('Face to Face');
   const [supervisionGroupType, setSupervisionGroupType] = useState('Individual');
   const [setting, setSetting] = useState('Center');
   const [activityDesc, setActivityDesc] = useState('');
@@ -268,7 +268,7 @@ export default function FieldworkPage() {
     setEntrySyncType(e.entry_sync_type || 'Synchronized');
     setSupervised(!!e.supervised);
     setSupervisorName(e.supervisor_name || '');
-    setSupFormat(e.supervision_format || 'In person');
+    setSupFormat(e.supervision_format || 'Face to Face');
     setSupervisionGroupType(e.supervision_group_type || 'Individual');
     setSetting(e.setting || 'Center');
     setActivityDesc(e.activity_description || '');
@@ -285,7 +285,7 @@ export default function FieldworkPage() {
     setDate(new Date().toISOString().slice(0, 10));
     setType('Unrestricted Hours');
     setEntrySyncType('Synchronized');
-    setSupFormat('In person');
+    setSupFormat('Face to Face');
     setSupervisionGroupType('Individual');
     setSupervisorPresent(false);
     setSetting('Center');
@@ -362,7 +362,7 @@ export default function FieldworkPage() {
     setEntrySyncType(lastEntry.entry_sync_type || 'Synchronized');
     setSupervised(!!lastEntry.supervised);
     setSupervisorName(lastEntry.supervisor_name || '');
-    setSupFormat(lastEntry.supervision_format || 'In person');
+    setSupFormat(lastEntry.supervision_format || 'Face to Face');
     setSupervisionGroupType(lastEntry.supervision_group_type || 'Individual');
     setSetting(lastEntry.setting || 'Center');
     setEntryFieldworkType(lastEntry.fieldwork_type === 'concentrated' ? 'concentrated' : 'supervised');
@@ -881,7 +881,7 @@ export default function FieldworkPage() {
             )}
             {supervised && (
               <div style={{ minWidth: 0 }}>
-                <label style={lbl}>Supervision Type</label>
+                <label style={lbl}>Individual or Group</label>
                 <select value={supervisionGroupType} onChange={e => setSupervisionGroupType(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
                   {GROUP_TYPES.map(g => <option key={g}>{g}</option>)}
                 </select>

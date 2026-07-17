@@ -348,7 +348,16 @@ export default function BcabaPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Total Hours</p>
-          <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1 }}>{summary ? Number(summary.totalHours).toFixed(1) : '0.0'}</p>
+          <p style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, color: 'var(--ink)', margin: 0, lineHeight: 1 }}>
+            {summary ? Number(summary.totalHours).toFixed(1) : '0.0'}
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 400, color: 'var(--muted)', marginLeft: 6 }}>/ 130 max</span>
+          </p>
+          <div style={{ height: 5, background: 'var(--bg)', borderRadius: 3, overflow: 'hidden', marginTop: 12 }}>
+            <div style={{ width: Math.min(100, ((summary ? Number(summary.totalHours) : 0) / 130) * 100) + '%', height: '100%', background: (summary ? Number(summary.totalHours) : 0) > 130 ? 'var(--amber)' : 'var(--spruce)', borderRadius: 3 }} />
+          </div>
+          {summary && Number(summary.totalHours) > 130 && (
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--amber)', margin: '7px 0 0', lineHeight: 1.4 }}>{(Number(summary.totalHours) - 130).toFixed(1)} hrs over the monthly cap — only 130 count this month</p>
+          )}
         </div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '24px 28px', minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Supervised</p>

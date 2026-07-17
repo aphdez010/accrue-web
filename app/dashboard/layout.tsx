@@ -35,6 +35,18 @@ const roleDefaultPath: Record<Role, string> = {
   bcba: '/dashboard',
 };
 
+// Owner/dev accounts that keep the full three-way view toggle for testing.
+// Everyone else is locked to the single view their account_type implies.
+// (prod owner, local-dev owner)
+const OWNER_CLERK_IDS = ['user_3F9tY9Opc2DWMu3q7A51f1kUwKC', 'user_3F5cM0lihS8T7Pv1laXX1nNBNEp'];
+
+// Durable account_type (stored on the professional record) -> which view.
+const accountTypeToRole: Record<string, Role> = {
+  bcba_trainee: 'trainee',
+  bcaba_trainee: 'bcaba',
+  supervisor: 'bcba',
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={null}>
@@ -68,8 +80,32 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   }, []);
   const { signOut } = useClerk();
   const { user } = useUser();
-  const [mobileAgentOpen, setMobileAgentOpen] = useState(false);
   const { getToken } = useAuth();
+
+  // Owner/dev keeps the full toggle; everyone else is bound to their account_type.
+  const isOwner = !!user && OWNER_CLERK_IDS.includes(user.id);
+  const [accountType, setAccountType] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+        const res = await fetch(`${apiUrl}/professionals/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const pro = await res.json();
+        if (!cancelled) setAccountType(pro?.account_type ?? null);
+      } catch { /* fall back to path-derived role */ }
+    })();
+    return () => { cancelled = true; };
+  }, [getToken]);
+
+  // Non-owner + known account_type => locked to that single view (path/param ignored).
+  // Owner, or legacy account with no account_type => fall back to the toggle/path role.
+  const lockedRole: Role | null = (!isOwner && accountType && accountTypeToRole[accountType]) ? accountTypeToRole[accountType] : null;
+  const effectiveRole: Role = lockedRole ?? role;
+  const showToggle = isOwner;
+  const [mobileAgentOpen, setMobileAgentOpen] = useState(false);
 
   // Link any pending Stripe checkout session (from the pay-first landing page flow)
   // to this account before running the subscription-status check below.
@@ -176,13 +212,19 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 50, minWidth: 0 }}>
           <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em' }}>Supervisd</div>
-            <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2, overflowX: 'auto' as const, maxWidth: '50vw' }}>
-              {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
-                <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 9.5px var(--sans)', lineHeight: 1.2, padding: '5px 7px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
-                  {roleLabels[r]}
-                </button>
-              ))}
-            </div>
+            {showToggle ? (
+              <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 8, padding: 3, gap: 2, overflowX: 'auto' as const, maxWidth: '50vw' }}>
+                {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
+                  <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: effectiveRole === r ? 'var(--spruce)' : 'transparent', color: effectiveRole === r ? '#fff' : 'var(--muted)', font: '600 9.5px var(--sans)', lineHeight: 1.2, padding: '5px 7px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
+                    {roleLabels[r]}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div style={{ font: '600 10px var(--sans)', color: 'var(--spruce)', background: 'var(--bg)', padding: '5px 10px', borderRadius: 6, whiteSpace: 'nowrap' as const }}>
+                {roleLabels[effectiveRole]}
+              </div>
+            )}
             <button onClick={() => signOut()} style={{ background: 'none', border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--muted)', padding: '5px 8px', borderRadius: 6, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -192,7 +234,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             </button>
           </div>
           <div style={{ display: 'flex', overflowX: 'auto', padding: '0 12px 12px', gap: 6 }}>
-            {(role === 'trainee' ? [
+            {(effectiveRole === 'trainee' ? [
               { label: 'Log hours', href: '/dashboard/fieldwork' },
               { label: 'Accrual', href: '/dashboard/compliance' },
               { label: 'Vault', href: '/dashboard/vault' },
@@ -200,7 +242,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               { label: 'M-FVF', href: '/dashboard/monthly-verification' },
               { label: 'F-FVF', href: '/dashboard/final-verification' },
               { label: 'Billing', href: '/dashboard/billing' },
-            ] : role === 'bcaba' ? [
+            ] : effectiveRole === 'bcaba' ? [
               { label: 'Log hours', href: '/dashboard/bcaba' },
               { label: 'Accrual', href: '/dashboard/compliance?role=bcaba' },
               { label: 'M-FVF', href: '/dashboard/bcaba/monthly-verification' },
@@ -231,26 +273,33 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '.15em', textTransform: 'uppercase', marginTop: 2 }}>BACB Compliance Platform</div>
           </div>
 
-          <div style={{ margin: '12px 12px 4px', background: 'var(--bg)', borderRadius: 10, padding: 4, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
-            {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
-              <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: role === r ? 'var(--spruce)' : 'transparent', color: role === r ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', textAlign: 'left' as const, padding: '9px 10px', borderRadius: 7, cursor: 'pointer' }}>
-                {roleLabels[r]}
-              </button>
-            ))}
-          </div>
+          {showToggle ? (
+            <div style={{ margin: '12px 12px 4px', background: 'var(--bg)', borderRadius: 10, padding: 4, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
+              {(['trainee', 'bcaba', 'bcba'] as const).map(r => (
+                <button key={r} onClick={() => handleRoleSwitch(r)} style={{ border: 0, background: effectiveRole === r ? 'var(--spruce)' : 'transparent', color: effectiveRole === r ? '#fff' : 'var(--muted)', font: '600 12px var(--sans)', textAlign: 'left' as const, padding: '9px 10px', borderRadius: 7, cursor: 'pointer' }}>
+                  {roleLabels[r]}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div style={{ margin: '12px 12px 4px', background: 'var(--bg)', borderRadius: 10, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--spruce)', flexShrink: 0 }} />
+              <span style={{ font: '600 12px var(--sans)', color: 'var(--ink)' }}>{roleLabels[effectiveRole]}</span>
+            </div>
+          )}
           <p style={{ margin: '0 12px 12px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.4 }}>
-            {roleCaptions[role]}
+            {roleCaptions[effectiveRole]}
           </p>
 
           <nav style={{ padding: 8, flex: 1 }}>
-            {(role === 'trainee' ? [
+            {(effectiveRole === 'trainee' ? [
               { label: 'Log hours', icon: '+', href: '/dashboard/fieldwork' },
               { label: 'Accrual record', icon: '↗', href: '/dashboard/compliance' },
               { label: 'Vault', icon: '▣', href: '/dashboard/vault' },
               { label: 'Import history', icon: '⬆', href: '/dashboard/import' },
               { label: 'M-FVF', icon: '✓', href: '/dashboard/monthly-verification' },
               { label: 'F-FVF', icon: '◆', href: '/dashboard/final-verification' },
-            ] : role === 'bcaba' ? [
+            ] : effectiveRole === 'bcaba' ? [
               { label: 'Log hours', icon: '+', href: '/dashboard/bcaba' },
               { label: 'Accrual record', icon: '↗', href: '/dashboard/compliance?role=bcaba' },
               { label: 'M-FVF', icon: '✓', href: '/dashboard/bcaba/monthly-verification' },
